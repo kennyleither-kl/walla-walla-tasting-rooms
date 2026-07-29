@@ -1,0 +1,1671 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Walla Walla Tasting Rooms</title>
+
+<!-- PWA / iOS home-screen app support -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#6d1535">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="WW Wineries">
+<link rel="apple-touch-icon" sizes="180x180" href="icons/icon-180.png">
+<link rel="apple-touch-icon" sizes="167x167" href="icons/icon-167.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="120x120" href="icons/icon-120.png">
+<link rel="icon" href="icons/icon-192.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+  :root {
+    --gold:     #787542;
+    --gold-lt:  #bab77e;
+    --cream:    #faf3e7;
+    --gray-1:   #f7f4f0;
+    --gray-2:   #ede8e1;
+    --gray-3:   #c8bfb2;
+    --gray-4:   #7a6e63;
+    --text:     #2a2420;
+    --radius:   10px;
+    --shadow:   0 2px 12px rgba(0,0,0,.10);
+    --shadow-lg:0 6px 30px rgba(0,0,0,.18);
+    --d-color:  #6d1535; --d-dark: #4b0e24; --d-mid: #9f2b55;
+    --d-tint:   #fdf8f8; --d-bar:  #787542;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Plus Jakarta Sans', system-ui, sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
+
+  /* ── HERO ── */
+  header { position: relative; min-height: 220px; display: flex; flex-direction: column; justify-content: flex-end; overflow: hidden; color: #fff; }
+  .hero-img { position: absolute; inset: 0; background-image: url('https://images.unsplash.com/photo-1560493676-04071c5f467b?auto=format&fit=crop&w=1600&q=80'); background-size: cover; background-position: center 60%; filter: brightness(.75) saturate(1.1); }
+  .hero-overlay { position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(30,10,14,.25) 0%, rgba(50,18,24,.55) 55%, rgba(60,22,30,.80) 100%); }
+  .hero-content { position: relative; padding: 28px 32px 22px; display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; }
+  .title-block { flex: 1 1 300px; }
+  header h1 { font-size: 2.1rem; font-weight: 300; letter-spacing: .18em; text-transform: uppercase; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
+  header p  { opacity: .7; font-size: .82rem; margin-top: 7px; letter-spacing: .12em; text-transform: uppercase; font-weight: 400; text-shadow: 0 1px 4px rgba(0,0,0,.4); }
+  .stats-bar { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-end; }
+  .stat { text-align: center; background: rgba(255,255,255,.14); backdrop-filter: blur(6px); border: 1px solid rgba(255,255,255,.22); border-radius: 8px; padding: 7px 16px; }
+  .stat .num { font-size: 1.5rem; font-weight: bold; line-height: 1; }
+  .stat .lbl { font-size: .68rem; opacity: .8; text-transform: uppercase; letter-spacing: .09em; margin-top: 2px; }
+
+  /* ── CONTROLS ── */
+  .controls { background: var(--gray-1); border-bottom: 1px solid var(--gray-2); padding: 11px 32px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .controls input[type=text] { flex: 1 1 180px; padding: 7px 14px; border: 1px solid var(--gray-3); border-radius: 20px; font-size: .88rem; font-family: inherit; background: #fff; outline: none; }
+  .controls input[type=text]:focus { border-color: #6d1535; }
+  .filter-group { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+  .filter-btn { padding: 5px 13px; border: 1px solid var(--gray-3); border-radius: 20px; background: #fff; font-size: .8rem; cursor: pointer; transition: all .14s; font-family: inherit; }
+  .filter-btn:hover { border-color: #9f2b55; }
+  .filter-btn.active { background: #6d1535; border-color: #6d1535; color: #fff; }
+  /* inactive district buttons — colored outline + text */
+  .filter-btn[data-filter="downtown"]  { border-color: #6d2b35; color: #6d2b35; }
+  .filter-btn[data-filter="airport"]   { border-color: #1a4a6e; color: #1a4a6e; }
+  .filter-btn[data-filter="eastside"]  { border-color: #2a5425; color: #2a5425; }
+  .filter-btn[data-filter="westside"]  { border-color: #7a4915; color: #7a4915; }
+  .filter-btn[data-filter="southside"] { border-color: #5a2e6a; color: #5a2e6a; }
+  .filter-btn[data-filter="rocks"]     { border-color: #2e5c4a; color: #2e5c4a; }
+  /* active — filled */
+  .filter-btn[data-filter="downtown"].active  { background: #6d2b35; border-color: #6d2b35; color: #fff; }
+  .filter-btn[data-filter="airport"].active   { background: #1a4a6e; border-color: #1a4a6e; color: #fff; }
+  .filter-btn[data-filter="eastside"].active  { background: #2a5425; border-color: #2a5425; color: #fff; }
+  .filter-btn[data-filter="westside"].active  { background: #7a4915; border-color: #7a4915; color: #fff; }
+  .filter-btn[data-filter="southside"].active { background: #5a2e6a; border-color: #5a2e6a; color: #fff; }
+  .filter-btn[data-filter="rocks"].active     { background: #2e5c4a; border-color: #2e5c4a; color: #fff; }
+  .btn-add { margin-left: auto; padding: 7px 18px; background: #6d1535; color: #fff; border: none; border-radius: 20px; font-size: .86rem; cursor: pointer; font-family: inherit; transition: background .14s; }
+  .btn-add:hover { background: #4b0e24; }
+
+  /* varietal filter row */
+  .controls-row2 { background: var(--gray-1); border-bottom: 1px solid var(--gray-2); padding: 8px 32px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .varietal-select-wrap { display: flex; align-items: center; gap: 6px; }
+  .varietal-select-wrap label { font-size: .78rem; color: var(--gray-4); font-family: sans-serif; white-space: nowrap; }
+  #varietalSelect {
+    padding: 5px 28px 5px 12px;
+    border: 1px solid var(--gray-3);
+    border-radius: 20px;
+    background: #fff;
+    font-size: .82rem;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%237a6e63'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 10px center;
+    transition: border-color .14s;
+    max-width: 240px;
+  }
+  #varietalSelect:focus { border-color: #6d1535; }
+  #varietalSelect.active { border-color: #6d1535; background-color: #fff8f8; font-weight: bold; }
+  .clear-varietal-btn { padding: 4px 11px; border: 1px solid var(--gray-3); border-radius: 20px; background: #fff; font-size: .78rem; cursor: pointer; color: var(--gray-4); font-family: sans-serif; transition: all .14s; display: none; }
+  .clear-varietal-btn:hover { background: #fee; border-color: #f99; color: #c00; }
+  .varietal-banner {
+    display: none;
+    padding: 9px 32px;
+    font-size: .85rem;
+    font-family: sans-serif;
+    align-items: center;
+    gap: 10px;
+  }
+  .varietal-banner.sparkling { background: #ddeaf5; color: #0f2f4a; border-bottom: 1px solid #b8d0e8; }
+  .varietal-banner.white     { background: #f7f0d4; color: #5c4408; border-bottom: 1px solid #e0d090; }
+  .varietal-banner.rose      { background: #fce8ef; color: #7a2040; border-bottom: 1px solid #f0b8cc; }
+  .varietal-banner.red       { background: #f5e4e6; color: #5a1520; border-bottom: 1px solid #dcb0b4; }
+  .varietal-banner strong { font-weight: bold; }
+  .varietal-banner .v-type-pill { font-size: .7rem; padding: 2px 9px; border-radius: 10px; opacity: .7; font-family: sans-serif; }
+  .varietal-banner.sparkling .v-type-pill { background: #b8d0e8; }
+  .varietal-banner.white     .v-type-pill { background: #e0d090; }
+  .varietal-banner.rose      .v-type-pill { background: #f0b8cc; }
+  .varietal-banner.red       .v-type-pill { background: #dcb0b4; }
+
+  /* ── DISTRICT COLORS ── */
+  .district-section[data-district="downtown"]  { --d-color:#6d2b35; --d-dark:#4a1b22; --d-mid:#9b3d4a; --d-tint:#fdf8f9; --d-bar:#787542; }
+  .district-section[data-district="airport"]   { --d-color:#1a4a6e; --d-dark:#0f2f4a; --d-mid:#2d6fa0; --d-tint:#f4f8fc; --d-bar:#5ba3cc; }
+  .district-section[data-district="eastside"]  { --d-color:#2a5425; --d-dark:#193416; --d-mid:#3d7a36; --d-tint:#f4faf4; --d-bar:#7ab55a; }
+  .district-section[data-district="westside"]  { --d-color:#7a4915; --d-dark:#562f0a; --d-mid:#b56e20; --d-tint:#fdf7f0; --d-bar:#d4904a; }
+  .district-section[data-district="southside"] { --d-color:#5a2e6a; --d-dark:#38184a; --d-mid:#844da0; --d-tint:#faf5fd; --d-bar:#b87acf; }
+  .district-section[data-district="rocks"]     { --d-color:#2e5c4a; --d-dark:#1a3830; --d-mid:#4a8c70; --d-tint:#f2faf6; --d-bar:#6ab890; }
+
+  /* ── MAIN ── */
+  main { padding: 24px 32px; }
+  .district-section { margin-bottom: 36px; background: var(--d-tint); border-radius: 14px; overflow: hidden; border: 1px solid rgba(0,0,0,.06); box-shadow: 0 1px 6px rgba(0,0,0,.05); }
+  .district-header-band { background: linear-gradient(135deg, var(--d-dark) 0%, var(--d-color) 55%, var(--d-mid) 100%); padding: 13px 20px 11px; display: flex; align-items: center; gap: 12px; cursor: pointer; user-select: none; }
+  .district-header-band:hover { filter: brightness(1.07); }
+  .district-chevron { color: rgba(255,255,255,.75); font-size: .65rem; transition: transform .22s ease; flex-shrink: 0; line-height: 1; }
+  .district-section.collapsed .district-chevron { transform: rotate(-90deg); }
+  .district-header-band h2 { font-size: .78rem; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: #fff; white-space: nowrap; text-shadow: 0 1px 3px rgba(0,0,0,.3); }
+  .district-progress { flex: 1; height: 6px; background: rgba(255,255,255,.25); border-radius: 3px; overflow: hidden; }
+  .district-progress-fill { height: 100%; background: rgba(255,255,255,.85); border-radius: 3px; transition: width .4s ease; }
+  .district-count { font-size: .8rem; color: rgba(255,255,255,.85); white-space: nowrap; font-family: sans-serif; }
+  .winery-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(295px, 1fr)); gap: 12px; padding: 16px; }
+  .district-section.collapsed .winery-grid { display: none; }
+  .district-section.collapsed { border-radius: 14px; }
+
+  /* ranked flat view */
+  .ranked-section { margin-bottom: 36px; }
+  .ranked-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(295px, 1fr)); gap: 12px; }
+  .ranked-subhead { font-size: .78rem; font-family: sans-serif; color: var(--gray-4); text-transform: uppercase; letter-spacing: .08em; margin: 18px 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--gray-2); }
+
+  /* ── WINERY CARD ── */
+  .winery-card { background: #fff; border-radius: var(--radius); border: 1px solid var(--gray-2); padding: 14px 14px 12px; cursor: pointer; transition: box-shadow .15s, border-color .15s, transform .1s; position: relative; }
+  .winery-card:hover { box-shadow: var(--shadow); border-color: var(--gray-3); transform: translateY(-1px); }
+  .winery-card.visited { border-left: 4px solid var(--d-color); }
+  .winery-card.visited .card-name { color: var(--d-dark); }
+  .winery-card.unvisited-varietal { opacity: .65; }
+
+  .card-top { display: flex; align-items: flex-start; gap: 9px; }
+  .card-checkbox { width: 20px; height: 20px; min-width: 20px; border: 2px solid var(--gray-3); border-radius: 50%; margin-top: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .card-checkbox.checked { background: var(--d-color); border-color: var(--d-color); }
+  .card-checkbox.checked::after { content: '✓'; color: #fff; font-size: .72rem; font-weight: bold; }
+  .card-name { font-size: .93rem; font-weight: 500; flex: 1; line-height: 1.35; letter-spacing: .01em; }
+  .card-district-badge { font-size: .66rem; padding: 2px 8px; border-radius: 10px; background: var(--gray-1); color: var(--gray-4); border: 1px solid var(--gray-2); white-space: nowrap; font-family: sans-serif; flex-shrink: 0; }
+
+  /* rank badge */
+  .rank-badge { position: absolute; top: -1px; left: -1px; width: 26px; height: 26px; border-radius: 10px 0 8px 0; display: flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: bold; font-family: sans-serif; }
+  .rank-badge.gold   { background: #f5c518; color: #5c3d00; }
+  .rank-badge.silver { background: #c0c8d0; color: #2a3038; }
+  .rank-badge.bronze { background: #cd8a4a; color: #4a2808; }
+  .rank-badge.plain  { background: var(--gray-2); color: var(--gray-4); }
+
+  .card-stars { display: flex; gap: 2px; margin: 7px 0 3px 29px; }
+  .star { font-size: 1rem; cursor: pointer; color: var(--gray-3); transition: color .1s; }
+  .star.lit { color: var(--d-bar, var(--gold)); }
+  .star:hover { color: var(--d-mid); }
+
+  .card-varietals { display: flex; flex-wrap: wrap; gap: 4px; margin: 5px 0 0 29px; }
+  /* base chip */
+  .varietal-chip { font-size: .66rem; padding: 2px 8px; border-radius: 10px; font-family: sans-serif; border: 1px solid transparent; }
+  .varietal-chip.type-sparkling { background: #ddeaf5; color: #0f2f4a; border-color: #b8d0e8; }
+  .varietal-chip.type-white     { background: #f7f0d4; color: #5c4408; border-color: #e0d090; }
+  .varietal-chip.type-rose      { background: #fce8ef; color: #7a2040; border-color: #f0b8cc; }
+  .varietal-chip.type-red       { background: #f5e4e6; color: #5a1520; border-color: #dcb0b4; }
+  /* highlighted chip in varietal view */
+  .varietal-chip.highlight { font-weight: bold; box-shadow: 0 0 0 1px rgba(0,0,0,.15); }
+
+  .card-note { margin: 7px 0 0 29px; font-size: .8rem; color: var(--gray-4); font-style: italic; line-height: 1.4; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .card-date { margin: 5px 0 0 29px; font-size: .7rem; color: var(--gray-3); font-family: sans-serif; }
+
+
+  /* ── MODAL ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.48); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: #fff; border-radius: 14px; width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; box-shadow: var(--shadow-lg); animation: slideUp .2s ease; }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-header { background: linear-gradient(135deg, var(--d-dark, #4b0e24), var(--d-color, #6d1535)); color: #fff; padding: 20px 24px 16px; border-radius: 14px 14px 0 0; display: flex; align-items: flex-start; justify-content: space-between; }
+  .modal-header h3 { font-size: 1.2rem; font-weight: normal; }
+  .modal-header .district-tag { font-size: .78rem; opacity: .75; margin-top: 3px; }
+  .modal-close { background: none; border: none; color: rgba(255,255,255,.7); font-size: 1.4rem; cursor: pointer; line-height: 1; padding: 0 0 0 12px; }
+  .modal-close:hover { color: #fff; }
+  .modal-body { padding: 22px 24px; display: flex; flex-direction: column; gap: 18px; }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group label { font-size: .8rem; font-weight: bold; color: var(--gray-4); text-transform: uppercase; letter-spacing: .06em; font-family: sans-serif; }
+  .form-group input[type=text], .form-group input[type=date], .form-group textarea, .form-group select { padding: 9px 13px; border: 1px solid var(--gray-3); border-radius: 8px; font-size: .92rem; font-family: inherit; outline: none; transition: border-color .15s; }
+  .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: #6d1535; }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+
+  .visited-toggle { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--gray-1); border-radius: 8px; cursor: pointer; }
+  .toggle-switch { width: 44px; height: 24px; background: var(--gray-3); border-radius: 12px; position: relative; transition: background .2s; flex-shrink: 0; }
+  .toggle-switch::after { content: ''; width: 18px; height: 18px; background: #fff; border-radius: 50%; position: absolute; top: 3px; left: 3px; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2); }
+  .toggle-switch.on { background: var(--gold); }
+  .toggle-switch.on::after { transform: translateX(20px); }
+  .toggle-label { font-size: .95rem; }
+
+  .star-picker { display: flex; gap: 6px; }
+  .star-picker .star { font-size: 1.6rem; cursor: pointer; color: var(--gray-3); transition: color .1s; }
+  .star-picker .star.lit { color: var(--gold); }
+  .star-picker .star:hover { color: #d4b060; }
+
+  /* varietal picker with groups */
+  .varietal-group { margin-bottom: 10px; }
+  .varietal-group-label { font-size: .7rem; font-family: sans-serif; font-weight: bold; letter-spacing: .1em; text-transform: uppercase; padding: 3px 6px; border-radius: 4px; margin-bottom: 6px; display: inline-block; }
+  .varietal-group-label.sparkling { background: #ddeaf5; color: #0f2f4a; }
+  .varietal-group-label.white     { background: #f7f0d4; color: #5c4408; }
+  .varietal-group-label.rose      { background: #fce8ef; color: #7a2040; }
+  .varietal-group-label.red       { background: #f5e4e6; color: #5a1520; }
+  .varietal-group-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .varietal-option { padding: 5px 12px; border: 1px solid var(--gray-3); border-radius: 20px; font-size: .78rem; cursor: pointer; font-family: sans-serif; transition: all .12s; background: #fff; }
+  .varietal-option:hover { border-color: #9f2b55; }
+  .varietal-option.selected.type-sparkling { background: #1a4a6e; border-color: #1a4a6e; color: #fff; }
+  .varietal-option.selected.type-white     { background: #7a5c10; border-color: #7a5c10; color: #fff; }
+  .varietal-option.selected.type-rose      { background: #9a2a50; border-color: #9a2a50; color: #fff; }
+  .varietal-option.selected.type-red       { background: #6d1535; border-color: #6d1535; color: #fff; }
+
+  .modal-footer { padding: 16px 24px; border-top: 1px solid var(--gray-2); display: flex; justify-content: flex-end; gap: 10px; }
+  .btn-save { padding: 9px 24px; background: #6d1535; color: #fff; border: none; border-radius: 8px; font-size: .9rem; cursor: pointer; font-family: inherit; }
+  .btn-save:hover { background: #4b0e24; }
+  .btn-cancel { padding: 9px 20px; background: none; border: 1px solid var(--gray-3); border-radius: 8px; font-size: .9rem; cursor: pointer; font-family: inherit; }
+  .btn-cancel:hover { background: var(--gray-1); }
+
+  .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 2000; align-items: center; justify-content: center; }
+  .confirm-overlay.open { display: flex; }
+  .confirm-box { background: #fff; border-radius: 12px; padding: 28px 30px; max-width: 340px; text-align: center; box-shadow: var(--shadow-lg); }
+  .confirm-box h4 { margin-bottom: 10px; }
+  .confirm-box p { font-size: .9rem; color: var(--gray-4); margin-bottom: 22px; }
+  .confirm-btns { display: flex; gap: 10px; justify-content: center; }
+  .btn-danger { padding: 8px 22px; background: #c0392b; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; }
+  .btn-danger:hover { background: #96281b; }
+  .empty { text-align: center; padding: 50px; color: var(--gray-4); font-size: .95rem; }
+
+  @media (max-width: 600px) {
+    .hero-content { padding: 18px 16px 16px; }
+    header h1 { font-size: 1.6rem; }
+    .controls, .controls-row2 { padding: 9px 14px; }
+    main { padding: 14px 10px; }
+    .winery-grid, .ranked-grid { grid-template-columns: 1fr; padding: 10px; }
+  }
+
+  /* ── MAP VIEW ── */
+  #mapView { visibility: hidden; pointer-events: none; height: calc(100vh - 220px); min-height: 400px; margin: 0; border-top: 1px solid var(--gray-2); }
+  #mapView.map-active { visibility: visible; pointer-events: auto; }
+  .btn-map { padding: 7px 14px; background: #fff; color: var(--gray-4); border: 1px solid var(--gray-3); border-radius: 20px; font-size: .82rem; cursor: pointer; font-family: inherit; transition: all .14s; }
+  .btn-map:hover { background: var(--gray-1); border-color: var(--gray-4); color: var(--text); }
+  .btn-map.active { background: var(--text); color: #fff; border-color: var(--text); }
+
+  /* ── TRIP PLANNER ── */
+  .btn-plan-toggle { padding: 7px 14px; background: #fff; color: var(--gray-4); border: 1px solid var(--gray-3); border-radius: 20px; font-size: .82rem; cursor: pointer; font-family: inherit; transition: all .14s; position: relative; }
+  .btn-plan-toggle:hover { background: var(--gray-1); border-color: var(--gray-4); color: var(--text); }
+  .btn-plan-toggle.has-items { border-color: #6d1535; color: #6d1535; }
+  .plan-count-badge { display: inline-flex; align-items: center; justify-content: center; background: #6d1535; color: #fff; border-radius: 10px; font-size: .68rem; font-weight: bold; min-width: 16px; height: 16px; padding: 0 4px; margin-left: 5px; vertical-align: middle; }
+
+  /* panel shell */
+  .planner-panel { position: fixed; top: 0; right: -420px; width: 400px; height: 100vh; background: var(--cream); box-shadow: -6px 0 32px rgba(0,0,0,.18); z-index: 900; display: flex; flex-direction: column; transition: right .28s cubic-bezier(.4,0,.2,1); }
+  .planner-panel.open { right: 0; }
+  .planner-scrim { display: none; position: fixed; inset: 0; z-index: 899; background: rgba(0,0,0,.25); }
+  .planner-scrim.open { display: block; }
+
+  /* header */
+  .planner-header { background: linear-gradient(135deg, #3a1218, #6d2b35); color: #fff; padding: 20px 20px 0; flex-shrink: 0; }
+  .planner-header-top { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 14px; }
+  .planner-title { font-size: 1.1rem; font-weight: 500; letter-spacing: .03em; }
+  .planner-subtitle { font-size: .75rem; opacity: .7; margin-top: 3px; letter-spacing: .04em; }
+  .planner-close { background: none; border: none; color: rgba(255,255,255,.6); font-size: 1.4rem; cursor: pointer; padding: 0; line-height: 1; transition: color .12s; }
+  .planner-close:hover { color: #fff; }
+  /* meta strip inside header */
+  .planner-meta { display: flex; gap: 0; border-top: 1px solid rgba(255,255,255,.15); margin: 0 -20px; }
+  .planner-meta-item { flex: 1; text-align: center; padding: 10px 6px; border-right: 1px solid rgba(255,255,255,.12); }
+  .planner-meta-item:last-child { border-right: none; }
+  .planner-meta-val { font-size: 1.05rem; font-weight: 600; line-height: 1; }
+  .planner-meta-lbl { font-size: .62rem; opacity: .65; text-transform: uppercase; letter-spacing: .08em; margin-top: 2px; }
+  /* date + group controls */
+  .planner-controls { padding: 10px 14px; background: #fff; border-bottom: 1px solid var(--gray-2); display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+  .planner-date-input { flex: 1; padding: 6px 10px; border: 1px solid var(--gray-3); border-radius: 8px; font-size: .82rem; font-family: inherit; background: #fff; outline: none; color: var(--text); }
+  .planner-date-input:focus { border-color: #6d1535; }
+  .btn-group-district { padding: 6px 12px; border: 1px solid var(--gray-3); border-radius: 8px; background: #fff; font-size: .78rem; cursor: pointer; font-family: inherit; color: var(--gray-4); transition: all .14s; white-space: nowrap; }
+  .btn-group-district:hover { border-color: #6d1535; color: #6d1535; }
+  .btn-group-district.active-group { background: #6d1535; border-color: #6d1535; color: #fff; }
+
+  /* body / list */
+  .planner-body { flex: 1; overflow-y: auto; padding: 12px 14px; }
+
+  /* empty state */
+  .planner-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 280px; text-align: center; padding: 20px; }
+  .planner-empty-icon { font-size: 3rem; margin-bottom: 14px; opacity: .35; }
+  .planner-empty-title { font-size: 1rem; font-weight: 500; color: var(--text); margin-bottom: 8px; }
+  .planner-empty-body { font-size: .84rem; color: var(--gray-4); line-height: 1.6; }
+
+  /* district group label */
+  .planner-group-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; padding: 14px 4px 6px; display: flex; align-items: center; gap: 8px; }
+  .planner-group-label::after { content: ''; flex: 1; height: 1px; background: var(--gray-2); }
+
+  /* item */
+  .planner-item { display: flex; align-items: stretch; border: 1px solid var(--gray-2); border-radius: 10px; margin-bottom: 8px; background: #fff; overflow: hidden; transition: box-shadow .14s, opacity .14s; position: relative; }
+  .planner-item:hover { box-shadow: var(--shadow); }
+  .planner-item.done { opacity: .5; }
+  .planner-item.done .planner-item-name { text-decoration: line-through; }
+  .planner-item.drag-over { border-color: #6d1535; box-shadow: 0 0 0 2px rgba(109,21,53,.2); }
+  .planner-item.dragging { opacity: .35; box-shadow: none; }
+
+  /* drag handle — left column */
+  .planner-item-handle { width: 28px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; cursor: grab; border-radius: 10px 0 0 10px; transition: background .12s; }
+  .planner-item-handle:active { cursor: grabbing; }
+  .planner-item:hover .planner-item-handle { background: var(--gray-1); }
+  /* six-dot grip SVG */
+  .planner-item-handle::before {
+    content: '';
+    display: block;
+    width: 10px; height: 16px;
+    background-image: radial-gradient(circle, var(--gray-3) 1.5px, transparent 1.5px);
+    background-size: 4px 4px;
+    background-repeat: repeat;
+    border-radius: 1px;
+    transition: background-image .12s;
+  }
+  .planner-item:hover .planner-item-handle::before { background-image: radial-gradient(circle, var(--gray-4) 1.5px, transparent 1.5px); }
+
+  /* colour accent bar */
+  .planner-item-accent { width: 4px; flex-shrink: 0; }
+
+  /* main body */
+  .planner-item-inner { flex: 1; display: flex; align-items: center; gap: 9px; padding: 11px 10px; min-width: 0; }
+  .planner-item-check { width: 22px; height: 22px; min-width: 22px; border: 2px solid var(--gray-3); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; background: #fff; flex-shrink: 0; }
+  .planner-item-check:hover { border-color: #6d1535; }
+  .planner-item.done .planner-item-check { background: #6d1535; border-color: #6d1535; }
+  .planner-item.done .planner-item-check::after { content: '✓'; color: #fff; font-size: .7rem; font-weight: bold; }
+  .planner-item-num { font-size: .67rem; font-weight: 700; color: var(--gray-3); min-width: 14px; text-align: center; font-family: sans-serif; flex-shrink: 0; }
+  .planner-item-info { flex: 1; min-width: 0; }
+  .planner-item-name { font-size: .88rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .planner-item-meta { font-size: .71rem; color: var(--gray-4); margin-top: 2px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .planner-item-stars { color: var(--gold); letter-spacing: -.5px; }
+
+  /* remove — top-right of the note column */
+  .planner-remove-btn { position: absolute; top: 5px; right: 5px; width: 18px; height: 18px; border: none; border-radius: 50%; background: none; cursor: pointer; font-size: .65rem; display: flex; align-items: center; justify-content: center; color: var(--gray-3); opacity: 0; transition: opacity .15s, color .12s, background .12s; line-height: 1; padding: 0; }
+  .planner-item:hover .planner-remove-btn { opacity: 1; }
+  .planner-remove-btn:hover { color: #c00; background: #fee8e8; }
+  @media (hover: none) { .planner-remove-btn { opacity: 1; } }
+
+  /* note — right column */
+  .planner-item-note-col { width: 110px; flex-shrink: 0; border-left: 1px solid var(--gray-2); display: flex; align-items: stretch; padding: 8px 28px 8px 8px; position: relative; }
+  .planner-item-note-input { flex: 1; padding: 0 6px; border: 1px solid transparent; border-radius: 6px; font-size: .76rem; font-family: inherit; background: transparent; outline: none; color: var(--text); resize: none; line-height: 1.4; transition: border-color .14s, background .14s; }
+  .planner-item-note-col:hover .planner-item-note-input { border-color: var(--gray-2); background: var(--gray-1); }
+  .planner-item-note-input:focus { border-color: #6d1535 !important; background: #fff !important; }
+  .planner-item-note-input::placeholder { color: var(--gray-3); }
+
+  /* footer */
+  .planner-footer { padding: 12px 14px; border-top: 1px solid var(--gray-2); display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; background: #fff; }
+  .planner-footer-row { display: flex; gap: 8px; }
+  .btn-directions { flex: 1; padding: 11px; background: #4285f4; color: #fff; border: none; border-radius: 8px; font-size: .88rem; cursor: pointer; font-family: inherit; font-weight: 500; transition: background .14s; }
+  .btn-directions:hover { background: #2a6dd9; }
+  .btn-directions:disabled { background: var(--gray-3); cursor: default; }
+  .btn-copy-plan { padding: 11px 14px; background: var(--gray-1); color: var(--gray-4); border: 1px solid var(--gray-2); border-radius: 8px; font-size: .88rem; cursor: pointer; font-family: inherit; transition: all .14s; white-space: nowrap; }
+  .btn-copy-plan:hover { background: var(--gray-2); color: var(--text); }
+  .btn-copy-plan:disabled { opacity: .4; cursor: default; }
+  .btn-clear-plan { padding: 7px; background: none; border: none; font-size: .78rem; cursor: pointer; font-family: inherit; color: var(--gray-3); transition: color .14s; text-align: center; }
+  .btn-clear-plan:hover { color: #c00; }
+
+  /* card add button */
+  .card-plan-btn { background: none; border: none; cursor: pointer; font-size: .82rem; line-height: 1; color: var(--gray-3); transition: color .14s, transform .12s; padding: 2px 0 2px 4px; flex-shrink: 0; font-family: sans-serif; font-weight: bold; }
+  .card-plan-btn:hover { color: #6d1535; transform: scale(1.2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="hero-img"></div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <div class="title-block">
+      <h1>Walla Walla</h1>
+      <p>Walla Walla Valley &mdash; Washington &amp; Oregon</p>
+    </div>
+    <div class="stats-bar" id="statsBar"></div>
+  </div>
+</header>
+
+<div class="controls">
+  <input type="text" id="searchBox" placeholder="Search wineries…" oninput="render()">
+  <div class="filter-group">
+    <button class="filter-btn active" data-filter="all"       onclick="setFilter('all')">All</button>
+    <button class="filter-btn"        data-filter="visited"   onclick="setFilter('visited')">Visited</button>
+  </div>
+  <div class="filter-group">
+    <button class="filter-btn" data-filter="downtown"  onclick="setFilter('downtown')">Downtown</button>
+    <button class="filter-btn" data-filter="airport"   onclick="setFilter('airport')">Airport</button>
+    <button class="filter-btn" data-filter="eastside"  onclick="setFilter('eastside')">Eastside</button>
+    <button class="filter-btn" data-filter="westside"  onclick="setFilter('westside')">Westside</button>
+    <button class="filter-btn" data-filter="southside" onclick="setFilter('southside')">Southside</button>
+    <button class="filter-btn" data-filter="rocks"     onclick="setFilter('rocks')">Rocks District</button>
+  </div>
+  <button class="btn-map" id="mapToggleBtn" onclick="toggleMapView()">🗺 Map</button>
+  <button class="btn-plan-toggle" id="planToggleBtn" onclick="openPlanner()">📋 Plan <span class="plan-count-badge" id="planBadge" style="display:none">0</span></button>
+  <button class="btn-add" onclick="openModal(null)">+ Add Winery</button>
+</div>
+
+<div class="controls-row2">
+  <div class="varietal-select-wrap">
+    <label for="varietalSelect">🍇 Best by varietal:</label>
+    <select id="varietalSelect" onchange="setVarietalFilter(this.value)">
+      <option value="">— All —</option>
+    </select>
+  </div>
+  <button class="clear-varietal-btn" id="clearVarietalBtn" onclick="setVarietalFilter('')">× Clear</button>
+</div>
+
+<div class="varietal-banner" id="varietalBanner">
+  <span id="varietalBannerText"></span>
+</div>
+
+<main id="mainContent"></main>
+
+<div id="mapView"></div>
+
+<!-- Trip Planner Panel -->
+<div class="planner-scrim" id="plannerScrim" onclick="closePlanner()"></div>
+<div class="planner-panel" id="plannerPanel">
+  <div class="planner-header">
+    <div class="planner-header-top">
+      <div>
+        <div class="planner-title">🗺 Trip Plan</div>
+        <div class="planner-subtitle" id="plannerSubtitle">Add wineries with + on any card</div>
+      </div>
+      <button class="planner-close" onclick="closePlanner()">×</button>
+    </div>
+    <div class="planner-meta">
+      <div class="planner-meta-item">
+        <div class="planner-meta-val" id="metaStops">0</div>
+        <div class="planner-meta-lbl">Stops</div>
+      </div>
+      <div class="planner-meta-item">
+        <div class="planner-meta-val" id="metaDone">0</div>
+        <div class="planner-meta-lbl">Done</div>
+      </div>
+      <div class="planner-meta-item">
+        <div class="planner-meta-val" id="metaTime">—</div>
+        <div class="planner-meta-lbl">Est. time</div>
+      </div>
+    </div>
+  </div>
+  <div class="planner-controls">
+    <input type="date" class="planner-date-input" id="plannerDate" onchange="savePlanMeta()">
+    <button class="btn-group-district" id="groupDistrictBtn" onclick="toggleGroupByDistrict()">Group by district</button>
+  </div>
+  <div class="planner-body" id="plannerBody"></div>
+  <div class="planner-footer">
+    <div class="planner-footer-row">
+      <button class="btn-directions" id="directionsBtn" onclick="openDirections()">🗺 Google Maps</button>
+      <button class="btn-copy-plan" id="copyPlanBtn" onclick="copyItinerary()">📋 Copy</button>
+    </div>
+    <button class="btn-clear-plan" onclick="clearPlan()">Clear plan</button>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" onclick="overlayClick(event)">
+  <div class="modal">
+    <div class="modal-header" id="modalHeader">
+      <div>
+        <h3 id="modalTitle">Add Winery</h3>
+        <div class="district-tag" id="modalDistrictTag"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group" id="nameGroup">
+        <label>Winery Name</label>
+        <input type="text" id="fieldName" placeholder="Name…">
+      </div>
+      <div class="form-group" id="districtGroup">
+        <label>District</label>
+        <select id="fieldDistrict">
+          <option value="downtown">Downtown</option>
+          <option value="airport">Airport District</option>
+          <option value="eastside">Eastside</option>
+          <option value="westside">Westside</option>
+          <option value="southside">Southside</option>
+          <option value="rocks">Rocks District / Milton-Freewater</option>
+        </select>
+      </div>
+      <div id="visitedToggleRow" class="visited-toggle" onclick="toggleVisited()">
+        <div class="toggle-switch" id="visitedSwitch"></div>
+        <span class="toggle-label" id="visitedLabel">Not yet visited</span>
+      </div>
+      <div id="visitedFields" style="display:none; flex-direction:column; gap:18px;">
+        <div class="form-group">
+          <label>Date Visited</label>
+          <input type="date" id="fieldDate">
+        </div>
+        <div class="form-group">
+          <label>Rating</label>
+          <div class="star-picker" id="starPicker">
+            <span class="star" data-val="1" onclick="setRating(1)">★</span>
+            <span class="star" data-val="2" onclick="setRating(2)">★</span>
+            <span class="star" data-val="3" onclick="setRating(3)">★</span>
+            <span class="star" data-val="4" onclick="setRating(4)">★</span>
+            <span class="star" data-val="5" onclick="setRating(5)">★</span>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Grape Varietals Tried</label>
+          <div id="varietalPicker"></div>
+        </div>
+        <div class="form-group">
+          <label>Tasting Notes</label>
+          <textarea id="fieldNotes" placeholder="What did you think? Favorite pours, atmosphere, highlights…"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save"   onclick="saveModal()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm Delete -->
+<!-- Confirm Uncheck -->
+<div class="confirm-overlay" id="uncheckOverlay">
+  <div class="confirm-box">
+    <h4>Clear Visit Data?</h4>
+    <p id="uncheckConfirmText"></p>
+    <div class="confirm-btns">
+      <button class="btn-cancel" onclick="closeUncheck()">Cancel</button>
+      <button class="btn-danger" onclick="confirmUncheck()">Clear &amp; Unmark</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── VARIETAL TAXONOMY ─────────────────────────────────────────────────────────
+
+const VARIETAL_GROUPS = [
+  { label: 'Sparkling', type: 'sparkling', items: [
+      'Sparkling / Pétillant',
+  ]},
+  { label: 'White', type: 'white', items: [
+      'Chardonnay','Viognier','Roussanne','Marsanne',
+      'Riesling','Sauvignon Blanc','Gewürztraminer',
+      'Pinot Gris','Sémillon','Muscat',
+  ]},
+  { label: 'Rosé', type: 'rose', items: [
+      'Rosé',
+  ]},
+  { label: 'Red', type: 'red', items: [
+      'Cabernet Sauvignon','Merlot','Syrah','Cabernet Franc','Malbec',
+      'Petit Verdot','Sangiovese','Barbera','Grenache','Mourvèdre',
+      'Tempranillo','Carménère',
+  ]},
+];
+
+// Flat ordered list (canonical order for chips + sort)
+const VARIETALS = VARIETAL_GROUPS.flatMap(g => g.items);
+const VARIETAL_ORDER = Object.fromEntries(VARIETALS.map((v, i) => [v, i]));
+
+function varietalType(v) {
+  for (const g of VARIETAL_GROUPS) if (g.items.includes(v)) return g.type;
+  return 'red';
+}
+function sortVarietals(arr) {
+  return [...arr].sort((a, b) => (VARIETAL_ORDER[a] ?? 99) - (VARIETAL_ORDER[b] ?? 99));
+}
+
+// ── DISTRICT DATA ─────────────────────────────────────────────────────────────
+
+const DISTRICT_LABELS = {
+  downtown: 'Downtown', airport: 'Airport District',
+  eastside: 'Eastside', westside: 'Westside', southside: 'Southside',
+  rocks: 'Rocks District / Milton-Freewater',
+};
+const DISTRICT_COLORS = {
+  downtown:  { color: '#6d2b35', dark: '#4a1b22' },
+  airport:   { color: '#1a4a6e', dark: '#0f2f4a' },
+  eastside:  { color: '#2a5425', dark: '#193416' },
+  westside:  { color: '#7a4915', dark: '#562f0a' },
+  southside: { color: '#5a2e6a', dark: '#38184a' },
+  rocks:     { color: '#2e5c4a', dark: '#1a3830' },
+};
+
+const SEED_WINERIES = [
+  // Downtown (31)
+  { name: 'Beekeeper by Abeja',              district: 'downtown' },
+  { name: 'Bledsoe Family Winery',           district: 'downtown' },
+  { name: 'Bontzu Cellars',                  district: 'downtown' },
+  { name: 'Browne Family Vineyards',         district: 'downtown' },
+  { name: 'Capital Call Vintners',           district: 'downtown' },
+  { name: 'Cayuse Vineyards',                district: 'downtown' },
+  { name: 'Corliss',                         district: 'downtown' },
+  { name: 'DAMA Wines',                      district: 'downtown' },
+  { name: 'El Corazon Winery',               district: 'downtown' },
+  { name: 'Foolhardy Vintners',              district: 'downtown' },
+  { name: 'Forgeron Cellars',                district: 'downtown' },
+  { name: 'Gård Vintners',                   district: 'downtown' },
+  { name: 'Henry Earl Estates & Russell Creek', district: 'downtown' },
+  { name: 'Heritage by L\'Ecole Wine Bar',   district: 'downtown' },
+  { name: 'House of Smith',                  district: 'downtown' },
+  { name: 'Kontos Cellars',                  district: 'downtown' },
+  { name: 'Lagana Cellars',                  district: 'downtown' },
+  { name: 'Lawrelin Wine Cellars',           district: 'downtown' },
+  { name: 'Locati Cellars',                  district: 'downtown' },
+  { name: 'Lodmell Cellars',                 district: 'downtown' },
+  { name: 'Maison Bleue Family Winery',      district: 'downtown' },
+  { name: 'Mark Ryan Winery',                district: 'downtown' },
+  { name: 'Mercer Wine Estates Tasting Room',district: 'downtown' },
+  { name: 'Plumb Cellars',                   district: 'downtown' },
+  { name: 'Pursued by Bear',                 district: 'downtown' },
+  { name: 'Seven Hills Winery',              district: 'downtown' },
+  { name: 'Spring Valley Vineyard',          district: 'downtown' },
+  { name: 'Time & Direction',                district: 'downtown' },
+  { name: 'TruthTeller Winery',              district: 'downtown' },
+  { name: 'Turtle Wines',                    district: 'downtown' },
+  { name: 'Vital Wines',                     district: 'downtown' },
+  // Airport (12)
+  { name: 'Adamant Cellars',   district: 'airport' },
+  { name: 'Arenness Cellars',  district: 'airport' },
+  { name: 'CAVU Cellars',      district: 'airport' },
+  { name: 'Dunham Cellars',    district: 'airport' },
+  { name: 'Eleganté Cellars',  district: 'airport' },
+  { name: 'Five Star Cellars', district: 'airport' },
+  { name: 'itä wines',         district: 'airport' },
+  { name: 'Prospice Wines',    district: 'airport' },
+  { name: 'SMAK Wines',        district: 'airport' },
+  { name: 'SYZYGY Winery',     district: 'airport' },
+  { name: 'Tamarack Cellars',  district: 'airport' },
+  { name: 'Tempus Cellars',    district: 'airport' },
+  // Eastside (10)
+  { name: 'Abeja Winery',         district: 'eastside' },
+  { name: 'ALUVÉ',                district: 'eastside' },
+  { name: 'aMaurice Cellars',     district: 'eastside' },
+  { name: 'College Cellars',      district: 'eastside' },
+  { name: 'Echolands Winery',     district: 'eastside' },
+  { name: 'FIGGINS',              district: 'eastside' },
+  { name: 'K Vintners',           district: 'eastside' },
+  { name: 'Leonetti Cellar',      district: 'eastside' },
+  { name: 'Tranche',              district: 'eastside' },
+  { name: 'Walla Walla Vintners', district: 'eastside' },
+  // Westside (16)
+  { name: 'Armstrong Family Winery',              district: 'westside' },
+  { name: 'Canoe Ridge Vineyard',                 district: 'westside' },
+  { name: 'Cougar Crest Winery',                  district: 'westside' },
+  { name: 'Foundry Vineyards',                    district: 'westside' },
+  { name: 'G. Cuneo Cellars',                     district: 'westside' },
+  { name: 'Gramercy Cellars',                     district: 'westside' },
+  { name: 'L\'Ecole No. 41',                      district: 'westside' },
+  { name: 'Long Shadows Vintners',                district: 'westside' },
+  { name: 'Morell Family Wines and Studio Twozerotwo', district: 'westside' },
+  { name: 'REALI Family Winery',                  district: 'westside' },
+  { name: 'Reininger Winery',                     district: 'westside' },
+  { name: 'Smoky Rose Cellars',                   district: 'westside' },
+  { name: 'The Walls Vineyards and PÁŠXA Wines',  district: 'westside' },
+  { name: 'Three Rivers Winery',                  district: 'westside' },
+  { name: 'Waterbrook Winery',                    district: 'westside' },
+  { name: 'Woodward Canyon',                      district: 'westside' },
+  // Southside (28)
+  { name: 'Alton Wines',           district: 'southside' },
+  { name: 'Amavi Cellars',         district: 'southside' },
+  { name: 'Balboa Winery',         district: 'southside' },
+  { name: 'Brook and Bull Cellars',district: 'southside' },
+  { name: 'Canvasback',            district: 'southside' },
+  { name: 'Caprio Cellars',        district: 'southside' },
+  { name: 'Dillon Cellars',        district: 'southside' },
+  { name: 'Doubleback',            district: 'southside' },
+  { name: 'Dusted Valley Vintners',district: 'southside' },
+  { name: 'Everen Wines',          district: 'southside' },
+  { name: 'Garrison Creek Cellars',district: 'southside' },
+  { name: 'Gifford Hirlinger',     district: 'southside' },
+  { name: 'Grosgrain Vineyards',   district: 'southside' },
+  { name: 'Isenhower Cellars',     district: 'southside' },
+  { name: 'Kinhaven Winery',       district: 'southside' },
+  { name: 'Mackey Vineyards',      district: 'southside' },
+  { name: 'Northstar Winery',      district: 'southside' },
+  { name: 'Patterson Cellars',     district: 'southside' },
+  { name: 'Pepper Bridge Winery',  district: 'southside' },
+  { name: 'Rasa Vineyards',        district: 'southside' },
+  { name: 'Revelry Vintners',      district: 'southside' },
+  { name: 'Reynvaan Family Vineyards', district: 'southside' },
+  { name: 'Saviah Cellars',        district: 'southside' },
+  { name: 'Sleight of Hand Cellars',district: 'southside' },
+  { name: 'SuLei Cellars',         district: 'southside' },
+  { name: 'Va Piano Vineyards',    district: 'southside' },
+  { name: 'Valdemar Estates',      district: 'southside' },
+  { name: 'Yellowhawk Resort and Sparkling House', district: 'southside' },
+  // Rocks District / Milton-Freewater, OR (2)
+  { name: 'Rotie Cellars',    district: 'rocks' },
+  { name: 'Watermill Winery', district: 'rocks' },
+];
+
+const STORAGE_KEY  = 'ww_tasting_rooms_v1';
+const UI_STATE_KEY = 'ww_ui_state_v1';
+const PLAN_KEY     = 'ww_trip_plan_v1';
+
+function loadData() {
+  try { const r = localStorage.getItem(STORAGE_KEY); if (r) return JSON.parse(r); } catch(e) {}
+  return SEED_WINERIES.map((w, i) => ({
+    id: 'w'+i+'_'+Math.random().toString(36).slice(2),
+    name: w.name, district: w.district,
+    visited: false, dateVisited: '', rating: 0, varietals: [], notes: '',
+  }));
+}
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(wineries)); }
+function loadUiState() {
+  try {
+    const r = localStorage.getItem(UI_STATE_KEY);
+    if (r) { const s = JSON.parse(r); if (Array.isArray(s.collapsed)) return new Set(s.collapsed); }
+  } catch(e) {}
+  return new Set();
+}
+function saveUiState() {
+  localStorage.setItem(UI_STATE_KEY, JSON.stringify({ collapsed: [...collapsedDistricts] }));
+}
+
+let wineries = loadData();
+
+// ── MIGRATION: ensure Rocks District entries exist ────────────────────────────
+(function migrateRocksDistrict() {
+  const rocksNames = ['Rotie Cellars', 'Watermill Winery'];
+  let changed = false;
+  rocksNames.forEach((name, i) => {
+    if (!wineries.find(w => w.name === name)) {
+      wineries.push({
+        id: 'rocks_' + i + '_' + Math.random().toString(36).slice(2),
+        name, district: 'rocks',
+        visited: false, dateVisited: '', rating: 0, varietals: [], notes: '',
+      });
+      changed = true;
+    }
+  });
+  if (changed) saveData();
+})();
+let currentFilter         = 'all';
+let currentVarietalFilter = '';
+let collapsedDistricts    = loadUiState();
+let editingId        = null;
+let uncheckPendingId = null;
+let planList        = [];
+let planDoneSet     = new Set();   // ids checked off on the day
+let planNotes       = {};          // id -> per-stop note string
+let planDate        = '';          // ISO date string
+let planGrouped     = false;       // group-by-district toggle
+const PLAN_META_KEY = 'ww_plan_meta_v1';
+(function loadPlan() {
+  try { const r = localStorage.getItem(PLAN_KEY); if (r) planList = JSON.parse(r); } catch(e) {}
+  try {
+    const m = localStorage.getItem(PLAN_META_KEY);
+    if (m) {
+      const parsed = JSON.parse(m);
+      if (Array.isArray(parsed.done))  planDoneSet = new Set(parsed.done);
+      if (parsed.notes)                planNotes   = parsed.notes;
+      if (parsed.date)                 planDate    = parsed.date;
+      if (parsed.grouped != null)      planGrouped = parsed.grouped;
+    }
+  } catch(e) {}
+})();
+function savePlan() { localStorage.setItem(PLAN_KEY, JSON.stringify(planList)); }
+function savePlanMeta() {
+  planDate = document.getElementById('plannerDate').value;
+  localStorage.setItem(PLAN_META_KEY, JSON.stringify({
+    done: [...planDoneSet], notes: planNotes, date: planDate, grouped: planGrouped
+  }));
+}
+let modalVisited  = false;
+let modalRating   = 0;
+let modalVarietals = [];
+
+function toggleDistrict(d) {
+  if (collapsedDistricts.has(d)) collapsedDistricts.delete(d);
+  else collapsedDistricts.add(d);
+  saveUiState();
+  // Toggle the class directly without a full re-render for snappiness
+  const section = document.querySelector(`.district-section[data-district="${d}"]`);
+  if (section) section.classList.toggle('collapsed', collapsedDistricts.has(d));
+}
+
+const sortKey = s => s.replace(/^(the|a|an|l'|le|la|les)\s+/i, '').toLowerCase();
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+
+function render() {
+  const query = document.getElementById('searchBox').value.toLowerCase();
+  const main  = document.getElementById('mainContent');
+  renderStats();
+
+  // base filter
+  let filtered = wineries.filter(w => {
+    if (query && !w.name.toLowerCase().includes(query)) return false;
+    if (currentFilter === 'all')       return true;
+    if (currentFilter === 'visited')   return w.visited;
+    if (currentFilter === 'unvisited') return !w.visited;
+    if (currentFilter === 'rated')     return w.rating > 0;
+    return w.district === currentFilter;
+  });
+
+  // ── varietal mode ──────────────────────────────────────────────────────────
+  if (currentVarietalFilter) {
+    const vf  = currentVarietalFilter;
+    const vType = varietalType(vf);
+    // show all that have this varietal tagged (visited), plus unvisited below
+    const withV      = filtered.filter(w => w.varietals.includes(vf) && w.visited);
+    const withVUnvis = filtered.filter(w => !w.visited);  // want-to-visit (may have varietal later)
+
+    // sort visited by rating desc, then alpha
+    withV.sort((a, b) => (b.rating - a.rating) || sortKey(a.name).localeCompare(sortKey(b.name)));
+
+    // banner
+    const banner = document.getElementById('varietalBanner');
+    banner.style.display = 'flex';
+    banner.className = 'varietal-banner ' + vType;
+    const typeLabel = VARIETAL_GROUPS.find(g => g.type === vType)?.label || '';
+    document.getElementById('varietalBannerText').innerHTML =
+      `<strong>${escHtml(vf)}</strong>&nbsp;<span class="v-type-pill">${typeLabel}</span>` +
+      `&nbsp;— ${withV.length} visit${withV.length!==1?'s':''} rated across all districts` +
+      (withVUnvis.length ? `, ${withVUnvis.length} unvisited` : '');
+
+    let html = '';
+
+    if (withV.length) {
+      html += `<div class="ranked-section">
+        <div class="ranked-subhead">Ranked by your rating</div>
+        <div class="ranked-grid" id="rankedGrid">
+          ${withV.map((w, i) => rankedCardHTML(w, i + 1, vf)).join('')}
+        </div>`;
+      if (withVUnvis.length) {
+        html += `<div class="ranked-subhead" style="margin-top:24px">Not yet visited (${withVUnvis.length})</div>
+          <div class="ranked-grid">
+            ${withVUnvis.sort((a,b) => sortKey(a.name).localeCompare(sortKey(b.name)))
+                        .map(w => cardHTML(w, true)).join('')}
+          </div>`;
+      }
+      html += `</div>`;
+    } else {
+      const msg = withV.length === 0 && withVUnvis.length === 0
+        ? 'No wineries match.'
+        : `No visited wineries tagged with <strong>${escHtml(vf)}</strong> yet. Mark wineries as visited and add varietals to see them here.`;
+      html = `<div class="empty">${msg}</div>`;
+      if (withVUnvis.length) {
+        html = `<div class="ranked-section">
+          <div class="ranked-subhead">Not yet visited (${withVUnvis.length})</div>
+          <div class="ranked-grid">
+            ${withVUnvis.sort((a,b) => sortKey(a.name).localeCompare(sortKey(b.name)))
+                        .map(w => cardHTML(w, true)).join('')}
+          </div></div>`;
+      }
+    }
+
+    main.innerHTML = html || '<div class="empty">No wineries match.</div>';
+    return;
+  }
+
+  // ── normal district view ───────────────────────────────────────────────────
+  document.getElementById('varietalBanner').style.display = 'none';
+
+  const DISTRICTS = ['downtown','airport','eastside','westside','southside','rocks'];
+  let html = '';
+  let any  = false;
+
+  DISTRICTS.forEach(d => {
+    const dWineries = filtered
+      .filter(w => w.district === d)
+      .sort((a, b) => sortKey(a.name).localeCompare(sortKey(b.name)));
+    if (!dWineries.length) return;
+    any = true;
+
+    const allD     = wineries.filter(w => w.district === d);
+    const visitedD = allD.filter(w => w.visited).length;
+    const pct      = allD.length ? Math.round(visitedD / allD.length * 100) : 0;
+
+    const collapsed = collapsedDistricts.has(d) ? ' collapsed' : '';
+    html += `
+      <div class="district-section${collapsed}" data-district="${d}">
+        <div class="district-header-band" onclick="toggleDistrict('${d}')">
+          <span class="district-chevron">▼</span>
+          <h2>${DISTRICT_LABELS[d]}</h2>
+          <div class="district-progress"><div class="district-progress-fill" style="width:${pct}%"></div></div>
+          <span class="district-count">${visitedD}/${allD.length}</span>
+        </div>
+        <div class="winery-grid">${dWineries.map(w => cardHTML(w, false)).join('')}</div>
+      </div>`;
+  });
+
+  main.innerHTML = any ? html : '<div class="empty">No wineries match your search or filter.</div>';
+}
+
+// ── CARD HTML ─────────────────────────────────────────────────────────────────
+
+function chipHTML(v, highlight) {
+  const t = varietalType(v);
+  return `<span class="varietal-chip type-${t}${highlight?' highlight':''}">${escHtml(v)}</span>`;
+}
+
+function cardHTML(w, showDistrict) {
+  const stars = [1,2,3,4,5].map(i =>
+    `<span class="star ${i<=w.rating?'lit':''}" onclick="quickRate(event,'${w.id}',${i})">★</span>`
+  ).join('');
+  const chips = sortVarietals(w.varietals).map(v => chipHTML(v, false)).join('');
+  const badge = showDistrict
+    ? `<span class="card-district-badge">${DISTRICT_LABELS[w.district]}</span>` : '';
+  const planBtn = `<button class="card-plan-btn" title="Add to plan" onclick="togglePlan(event,'${w.id}')">+</button>`;
+
+  return `
+    <div class="winery-card ${w.visited?'visited':''}" onclick="openModal('${w.id}')">
+      <div class="card-top">
+        <div class="card-checkbox ${w.visited?'checked':''}" onclick="toggleVisitedCard(event,'${w.id}')"></div>
+        <span class="card-name">${escHtml(w.name)}</span>
+        ${badge}
+        ${planBtn}
+      </div>
+      ${w.visited?`<div class="card-stars">${stars}</div>`:''}
+      ${chips?`<div class="card-varietals">${chips}</div>`:''}
+      ${w.notes?`<div class="card-note">${escHtml(w.notes)}</div>`:''}
+      ${w.dateVisited?`<div class="card-date">Visited ${formatDate(w.dateVisited)}</div>`:''}
+    </div>`;
+}
+
+function rankedCardHTML(w, rank, highlightVarietal) {
+  const stars = [1,2,3,4,5].map(i =>
+    `<span class="star ${i<=w.rating?'lit':''}" onclick="quickRate(event,'${w.id}',${i})">★</span>`
+  ).join('');
+  const chips = sortVarietals(w.varietals).map(v => chipHTML(v, v === highlightVarietal)).join('');
+
+  let rankClass = 'plain', rankLabel = String(rank);
+  if (rank === 1) { rankClass = 'gold';   rankLabel = '🥇'; }
+  if (rank === 2) { rankClass = 'silver'; rankLabel = '🥈'; }
+  if (rank === 3) { rankClass = 'bronze'; rankLabel = '🥉'; }
+
+  const planBtnR = `<button class="card-plan-btn" title="Add to plan" onclick="togglePlan(event,'${w.id}')">+</button>`;
+
+  return `
+    <div class="winery-card visited" onclick="openModal('${w.id}')" style="padding-left:18px">
+      <div class="rank-badge ${rankClass}">${rankLabel}</div>
+      <div class="card-top" style="margin-left:4px">
+        <div class="card-checkbox checked" onclick="toggleVisitedCard(event,'${w.id}')"></div>
+        <span class="card-name">${escHtml(w.name)}</span>
+        <span class="card-district-badge">${DISTRICT_LABELS[w.district]}</span>
+        ${planBtnR}
+      </div>
+      <div class="card-stars" style="margin-left:33px">${stars}</div>
+      ${chips?`<div class="card-varietals" style="margin-left:33px">${chips}</div>`:''}
+      ${w.notes?`<div class="card-note" style="margin-left:33px">${escHtml(w.notes)}</div>`:''}
+      ${w.dateVisited?`<div class="card-date" style="margin-left:33px">Visited ${formatDate(w.dateVisited)}</div>`:''}
+    </div>`;
+}
+
+function renderStats() {
+  const total   = wineries.length;
+  const visited = wineries.filter(w => w.visited).length;
+  const rated   = wineries.filter(w => w.rating > 0);
+  const pct     = total ? Math.round(visited / total * 100) : 0;
+  const avgRating = rated.length
+    ? (rated.reduce((s, w) => s + w.rating, 0) / rated.length).toFixed(1)
+    : '—';
+  const avgDisplay = avgRating !== '—' ? `★ ${avgRating}` : '—';
+  document.getElementById('statsBar').innerHTML = `
+    <div class="stat"><div class="num">${total}</div><div class="lbl">Wineries</div></div>
+    <div class="stat"><div class="num">${visited}</div><div class="lbl">Visited</div></div>
+    <div class="stat"><div class="num">${total - visited}</div><div class="lbl">To Go</div></div>
+    <div class="stat"><div class="num">${pct}%</div><div class="lbl">Complete</div></div>
+    <div class="stat"><div class="num" style="font-size:1.1rem">${avgDisplay}</div><div class="lbl">Avg Rating</div></div>`;
+}
+
+// ── FILTER ────────────────────────────────────────────────────────────────────
+
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
+  render();
+}
+
+function setVarietalFilter(v) {
+  currentVarietalFilter = v;
+  const sel = document.getElementById('varietalSelect');
+  sel.value = v;
+  sel.classList.toggle('active', !!v);
+  document.getElementById('clearVarietalBtn').style.display = v ? '' : 'none';
+  render();
+}
+
+// ── QUICK ACTIONS ─────────────────────────────────────────────────────────────
+
+function toggleVisitedCard(e, id) {
+  e.stopPropagation();
+  const w = wineries.find(x => x.id === id);
+  if (!w) return;
+  if (w.visited && (w.rating > 0 || w.notes || w.varietals.length)) {
+    // Has data worth preserving — confirm before clearing
+    uncheckPendingId = id;
+    document.getElementById('uncheckConfirmText').textContent =
+      `Mark "${w.name}" as not visited? This will clear your rating, notes, and varietals.`;
+    document.getElementById('uncheckOverlay').classList.add('open');
+    return;
+  }
+  w.visited = !w.visited;
+  if (!w.visited) { w.rating = 0; w.varietals = []; w.notes = ''; w.dateVisited = ''; }
+  saveData(); render();
+}
+function closeUncheck() { document.getElementById('uncheckOverlay').classList.remove('open'); uncheckPendingId = null; }
+function confirmUncheck() {
+  if (!uncheckPendingId) return;
+  const w = wineries.find(x => x.id === uncheckPendingId);
+  if (w) { w.visited = false; w.rating = 0; w.varietals = []; w.notes = ''; w.dateVisited = ''; }
+  saveData(); closeUncheck(); render();
+}
+
+/* ── TRIP PLANNER ──────────────────────────────────────────────────────────── */
+
+function togglePlan(e, id) {
+  e.stopPropagation();
+  if (!planList.includes(id)) planList.push(id);
+  savePlan();
+  updatePlanBadge();
+}
+
+function updatePlanBadge() {
+  const badge = document.getElementById('planBadge');
+  const btn   = document.getElementById('planToggleBtn');
+  if (!badge || !btn) return;
+  badge.textContent = planList.length;
+  badge.style.display = planList.length ? '' : 'none';
+  btn.classList.toggle('has-items', planList.length > 0);
+}
+
+function openPlanner() {
+  renderPlannerPanel();
+  document.getElementById('plannerDate').value = planDate;
+  document.getElementById('groupDistrictBtn').classList.toggle('active-group', planGrouped);
+  document.getElementById('plannerPanel').classList.add('open');
+  document.getElementById('plannerScrim').classList.add('open');
+}
+
+function closePlanner() {
+  // persist any note inputs before closing
+  document.querySelectorAll('.planner-item-note-input').forEach(inp => {
+    planNotes[inp.dataset.id] = inp.value;
+  });
+  savePlanMeta();
+  document.getElementById('plannerPanel').classList.remove('open');
+  document.getElementById('plannerScrim').classList.remove('open');
+}
+
+function toggleGroupByDistrict() {
+  planGrouped = !planGrouped;
+  document.getElementById('groupDistrictBtn').classList.toggle('active-group', planGrouped);
+  savePlanMeta();
+  renderPlannerPanel();
+}
+
+function plannerEstTime() {
+  const n = planList.length;
+  if (!n) return '—';
+  const mins = n * 50;
+  const h = Math.floor(mins / 60), m = mins % 60;
+  return m ? `${h}h ${m}m` : `${h}h`;
+}
+
+function renderPlannerPanel() {
+  const body    = document.getElementById('plannerBody');
+  const dirBtn  = document.getElementById('directionsBtn');
+  const copyBtn = document.getElementById('copyPlanBtn');
+  const doneCount = planList.filter(id => planDoneSet.has(id)).length;
+
+  // update meta strip
+  document.getElementById('metaStops').textContent = planList.length;
+  document.getElementById('metaDone').textContent  = doneCount;
+  document.getElementById('metaTime').textContent  = plannerEstTime();
+
+  // update subtitle
+  const sub = document.getElementById('plannerSubtitle');
+  if (planDate) {
+    const [y,mo,d] = planDate.split('-');
+    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    sub.textContent = `${months[+mo-1]} ${+d}, ${y}`;
+  } else {
+    sub.textContent = planList.length ? `${planList.length} stop${planList.length>1?'s':''}` : 'Add wineries with + on any card';
+  }
+
+  if (!planList.length) {
+    body.innerHTML = `<div class="planner-empty">
+      <div class="planner-empty-icon">🍷</div>
+      <div class="planner-empty-title">Your trip starts here</div>
+      <div class="planner-empty-body">Tap <strong>+</strong> on any winery card to build your itinerary. Reorder, check off stops as you go, and launch turn-by-turn directions when you're ready.</div>
+    </div>`;
+    dirBtn.disabled = true;
+    if (copyBtn) copyBtn.disabled = true;
+    return;
+  }
+  dirBtn.disabled = false;
+  if (copyBtn) copyBtn.disabled = false;
+
+  // build ordered list, optionally grouped by district
+  let orderedIds = planList;
+  let html = '';
+
+  if (planGrouped) {
+    // group while preserving relative order within each district
+    const districtOrder = [];
+    const byDistrict = {};
+    orderedIds.forEach((id, origIdx) => {
+      const w = wineries.find(x => x.id === id);
+      if (!w) return;
+      if (!byDistrict[w.district]) { byDistrict[w.district] = []; districtOrder.push(w.district); }
+      byDistrict[w.district].push({ id, origIdx });
+    });
+    let stopNum = 1;
+    districtOrder.forEach(d => {
+      const dc = DISTRICT_COLORS[d] || { color: '#6d1535' };
+      html += `<div class="planner-group-label" style="color:${dc.color}">${escHtml(DISTRICT_LABELS[d] || d)}</div>`;
+      byDistrict[d].forEach(({ id, origIdx }) => {
+        html += plannerItemHTML(id, origIdx, stopNum++, planList.length);
+      });
+    });
+  } else {
+    orderedIds.forEach((id, i) => {
+      html += plannerItemHTML(id, i, i + 1, planList.length);
+    });
+  }
+
+  body.innerHTML = html;
+
+  // restore note input values
+  document.querySelectorAll('.planner-item-note-input').forEach(inp => {
+    inp.value = planNotes[inp.dataset.id] || '';
+  });
+  initPlannerDrag();
+}
+
+function plannerItemHTML(id, listIndex, stopNum, total) {
+  const w = wineries.find(x => x.id === id);
+  if (!w) return '';
+  const dc     = DISTRICT_COLORS[w.district] || { color: '#6d1535' };
+  const isDone = planDoneSet.has(id);
+  const stars  = w.rating ? '★'.repeat(w.rating) : '';
+
+  return `<div class="planner-item${isDone?' done':''}" data-index="${listIndex}" draggable="true">
+    <div class="planner-item-handle" title="Drag to reorder"></div>
+    <div class="planner-item-accent" style="background:${dc.color}"></div>
+    <div class="planner-item-inner">
+      <div class="planner-item-check" onclick="togglePlanDone('${escHtml(id)}')" title="${isDone?'Mark not done':'Mark done'}"></div>
+      <span class="planner-item-num">${stopNum}</span>
+      <div class="planner-item-info">
+        <div class="planner-item-name">${escHtml(w.name)}</div>
+        <div class="planner-item-meta">
+          <span style="color:${dc.color};font-weight:600">${escHtml(DISTRICT_LABELS[w.district]||w.district)}</span>
+          ${w.visited && stars ? `<span class="planner-item-stars">${stars}</span>` : ''}
+          ${w.visited ? '<span>· ✓ Visited</span>' : ''}
+        </div>
+      </div>
+    </div>
+    <div class="planner-item-note-col">
+      <textarea class="planner-item-note-input" data-id="${escHtml(id)}" placeholder="Note…" oninput="planNotes[this.dataset.id]=this.value;savePlanMeta()"></textarea>
+      <button class="planner-remove-btn" onclick="removePlanItem(${listIndex})" title="Remove">✕</button>
+    </div>
+  </div>`;
+}
+
+function togglePlanDone(id) {
+  if (planDoneSet.has(id)) planDoneSet.delete(id);
+  else {
+    planDoneSet.add(id);
+    // also mark winery as visited if it isn't already
+    const w = wineries.find(x => x.id === id);
+    if (w && !w.visited) {
+      w.visited = true;
+      w.dateVisited = planDate || new Date().toISOString().slice(0,10);
+      saveData();
+      render();
+    }
+  }
+  savePlanMeta();
+  renderPlannerPanel();
+  updatePlanBadge();
+}
+
+/* drag-and-drop reorder — wired up after every renderPlannerPanel() */
+let _dragSrcIndex = null;
+
+function initPlannerDrag() {
+  const body  = document.getElementById('plannerBody');
+  const items = body.querySelectorAll('.planner-item[draggable]');
+
+  items.forEach(item => {
+    // ── mouse / desktop drag ──────────────────────────────────────────────────
+    item.addEventListener('dragstart', e => {
+      _dragSrcIndex = parseInt(item.dataset.index, 10);
+      item.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', _dragSrcIndex);
+    });
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      body.querySelectorAll('.planner-item').forEach(i => i.classList.remove('drag-over'));
+    });
+    item.addEventListener('dragover', e => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      body.querySelectorAll('.planner-item').forEach(i => i.classList.remove('drag-over'));
+      item.classList.add('drag-over');
+    });
+    item.addEventListener('dragleave', () => item.classList.remove('drag-over'));
+    item.addEventListener('drop', e => {
+      e.preventDefault();
+      item.classList.remove('drag-over');
+      const toIndex = parseInt(item.dataset.index, 10);
+      if (_dragSrcIndex === null || _dragSrcIndex === toIndex) return;
+      // persist note inputs before mutating the list
+      body.querySelectorAll('.planner-item-note-input').forEach(inp => {
+        planNotes[inp.dataset.id] = inp.value;
+      });
+      const moved = planList.splice(_dragSrcIndex, 1)[0];
+      planList.splice(toIndex, 0, moved);
+      savePlan();
+      renderPlannerPanel();
+    });
+
+    // ── touch drag (pointer events) ───────────────────────────────────────────
+    const handle = item.querySelector('.planner-item-handle');
+    if (!handle) return;
+
+    let touchSrcIndex = null, clone = null, startY = 0, lastY = 0;
+
+    handle.addEventListener('pointerdown', e => {
+      if (e.pointerType === 'mouse') return; // let dragstart handle mouse
+      e.preventDefault();
+      handle.setPointerCapture(e.pointerId);
+      touchSrcIndex = parseInt(item.dataset.index, 10);
+      startY = e.clientY;
+      lastY  = e.clientY;
+
+      // create floating clone
+      const rect = item.getBoundingClientRect();
+      clone = item.cloneNode(true);
+      clone.style.cssText = `position:fixed;left:${rect.left}px;width:${rect.width}px;top:${rect.top}px;z-index:9999;opacity:.85;box-shadow:0 8px 24px rgba(0,0,0,.22);pointer-events:none;border-radius:10px;`;
+      document.body.appendChild(clone);
+      item.classList.add('dragging');
+    });
+
+    handle.addEventListener('pointermove', e => {
+      if (!clone) return;
+      e.preventDefault();
+      const dy = e.clientY - startY;
+      const rect = item.getBoundingClientRect();
+      clone.style.top = (rect.top + dy) + 'px';
+      lastY = e.clientY;
+
+      // find the item we're hovering over
+      body.querySelectorAll('.planner-item').forEach(i => i.classList.remove('drag-over'));
+      const els = body.querySelectorAll('.planner-item');
+      els.forEach(el => {
+        const r = el.getBoundingClientRect();
+        if (lastY >= r.top && lastY <= r.bottom) el.classList.add('drag-over');
+      });
+    });
+
+    handle.addEventListener('pointerup', e => {
+      if (!clone) return;
+      clone.remove(); clone = null;
+      item.classList.remove('dragging');
+      body.querySelectorAll('.planner-item').forEach(i => i.classList.remove('drag-over'));
+
+      // find drop target
+      let dropIndex = null;
+      body.querySelectorAll('.planner-item').forEach(el => {
+        const r = el.getBoundingClientRect();
+        if (lastY >= r.top && lastY <= r.bottom) dropIndex = parseInt(el.dataset.index, 10);
+      });
+
+      if (dropIndex !== null && dropIndex !== touchSrcIndex) {
+        body.querySelectorAll('.planner-item-note-input').forEach(inp => {
+          planNotes[inp.dataset.id] = inp.value;
+        });
+        const moved = planList.splice(touchSrcIndex, 1)[0];
+        planList.splice(dropIndex, 0, moved);
+        savePlan();
+        renderPlannerPanel();
+      }
+      touchSrcIndex = null;
+    });
+  });
+}
+
+function removePlanItem(index) {
+  const id = planList[index];
+  planList.splice(index, 1);
+  planDoneSet.delete(id);
+  savePlan();
+  savePlanMeta();
+  updatePlanBadge();
+  renderPlannerPanel();
+  render();
+}
+
+function clearPlan() {
+  if (!planList.length) return;
+  if (!confirm('Clear your entire trip plan?')) return;
+  planList = [];
+  planDoneSet.clear();
+  savePlan();
+  savePlanMeta();
+  updatePlanBadge();
+  renderPlannerPanel();
+  render();
+}
+
+function openDirections() {
+  if (!planList.length) return;
+  const stops = planList.map(id => {
+    const w = wineries.find(x => x.id === id);
+    return w ? encodeURIComponent(w.name + ' Walla Walla WA') : null;
+  }).filter(Boolean);
+  if (!stops.length) return;
+  const destination = stops[stops.length - 1];
+  const waypoints   = stops.slice(0, -1).join('/');
+  window.open('https://www.google.com/maps/dir/' + waypoints + '/' + destination, '_blank');
+}
+
+function copyItinerary() {
+  if (!planList.length) return;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  let header = 'Walla Walla Wine Trip';
+  if (planDate) {
+    const [y,mo,d] = planDate.split('-');
+    header += ' · ' + months[+mo-1] + ' ' + (+d) + ', ' + y;
+  }
+  const lines = [header, ''];
+  planList.forEach((id, i) => {
+    const w = wineries.find(x => x.id === id);
+    if (!w) return;
+    const note = planNotes[id] ? '  (' + planNotes[id] + ')' : '';
+    lines.push(`${i+1}. ${w.name} — ${DISTRICT_LABELS[w.district]||w.district}${note}`);
+  });
+  lines.push('');
+  lines.push(`${planList.length} stop${planList.length>1?'s':''} · Est. ${plannerEstTime()}`);
+  navigator.clipboard.writeText(lines.join('\n')).then(() => {
+    const btn = document.getElementById('copyPlanBtn');
+    const orig = btn.textContent;
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = orig; }, 2000);
+  }).catch(() => alert('Copy not supported in this browser'));
+}
+
+/* ── MAP VIEW ──────────────────────────────────────────────────────────────── */
+
+const WINERY_LOCATIONS = [
+  // Downtown
+  { name: 'Beekeeper by Abeja',                lat: 46.0651, lng: -118.3432 },
+  { name: 'Bledsoe Family Winery',             lat: 46.0649, lng: -118.3438 },
+  { name: 'Browne Family Vineyards',           lat: 46.0657, lng: -118.3424 },
+  { name: 'Cayuse Vineyards',                  lat: 46.0644, lng: -118.3443 },
+  { name: 'Corliss',                           lat: 46.0642, lng: -118.3450 },
+  { name: 'DAMA Wines',                        lat: 46.0660, lng: -118.3418 },
+  { name: 'El Corazon Winery',                 lat: 46.0655, lng: -118.3410 },
+  { name: 'Forgeron Cellars',                  lat: 46.0648, lng: -118.3455 },
+  { name: 'Gård Vintners',                     lat: 46.0652, lng: -118.3415 },
+  { name: 'Heritage by L\'Ecole Wine Bar',     lat: 46.0658, lng: -118.3430 },
+  { name: 'House of Smith',                    lat: 46.0645, lng: -118.3420 },
+  { name: 'Kontos Cellars',                    lat: 46.0653, lng: -118.3408 },
+  { name: 'Lagana Cellars',                    lat: 46.0646, lng: -118.3462 },
+  { name: 'Locati Cellars',                    lat: 46.0661, lng: -118.3445 },
+  { name: 'Maison Bleue Family Winery',        lat: 46.0640, lng: -118.3412 },
+  { name: 'Mark Ryan Winery',                  lat: 46.0654, lng: -118.3400 },
+  { name: 'Mercer Wine Estates Tasting Room',  lat: 46.0643, lng: -118.3427 },
+  { name: 'Plumb Cellars',                     lat: 46.0659, lng: -118.3403 },
+  { name: 'Pursued by Bear',                   lat: 46.0647, lng: -118.3416 },
+  { name: 'Seven Hills Winery',                lat: 46.0641, lng: -118.3440 },
+  { name: 'Spring Valley Vineyard',            lat: 46.0656, lng: -118.3452 },
+  { name: 'TruthTeller Winery',                lat: 46.0663, lng: -118.3435 },
+  { name: 'Vital Wines',                       lat: 46.0638, lng: -118.3422 },
+  { name: 'Foolhardy Vintners',                lat: 46.0650, lng: -118.3428 },
+  { name: 'Bontzu Cellars',                    lat: 46.0636, lng: -118.3448 },
+  { name: 'Capital Call Vintners',             lat: 46.0662, lng: -118.3414 },
+  { name: 'Henry Earl Estates & Russell Creek',lat: 46.0664, lng: -118.3406 },
+  { name: 'Lagana Cellars',                    lat: 46.0639, lng: -118.3458 },
+  { name: 'Lawrelin Wine Cellars',             lat: 46.0665, lng: -118.3420 },
+  { name: 'Lodmell Cellars',                   lat: 46.0637, lng: -118.3464 },
+  { name: 'Time & Direction',                  lat: 46.0666, lng: -118.3412 },
+  { name: 'Turtle Wines',                      lat: 46.0635, lng: -118.3470 },
+  // Airport
+  { name: 'Dunham Cellars',    lat: 46.0972, lng: -118.2841 },
+  { name: 'Tamarack Cellars',  lat: 46.0965, lng: -118.2836 },
+  { name: 'Five Star Cellars', lat: 46.0958, lng: -118.2843 },
+  { name: 'SYZYGY Winery',     lat: 46.0970, lng: -118.2850 },
+  { name: 'CAVU Cellars',      lat: 46.0963, lng: -118.2858 },
+  { name: 'Adamant Cellars',   lat: 46.0975, lng: -118.2863 },
+  { name: 'Arenness Cellars',  lat: 46.0968, lng: -118.2870 },
+  { name: 'Eleganté Cellars',  lat: 46.0961, lng: -118.2830 },
+  { name: 'itä wines',         lat: 46.0954, lng: -118.2837 },
+  { name: 'Prospice Wines',    lat: 46.0947, lng: -118.2844 },
+  { name: 'SMAK Wines',        lat: 46.0973, lng: -118.2828 },
+  { name: 'Tempus Cellars',    lat: 46.0966, lng: -118.2821 },
+  // Eastside
+  { name: 'Abeja Winery',         lat: 46.0722, lng: -118.2971 },
+  { name: 'ALUVÉ',                lat: 46.0715, lng: -118.2980 },
+  { name: 'aMaurice Cellars',     lat: 46.0708, lng: -118.2964 },
+  { name: 'College Cellars',      lat: 46.0701, lng: -118.2957 },
+  { name: 'Echolands Winery',     lat: 46.0694, lng: -118.2970 },
+  { name: 'FIGGINS',              lat: 46.0687, lng: -118.2963 },
+  { name: 'K Vintners',           lat: 46.0680, lng: -118.2956 },
+  { name: 'Leonetti Cellar',      lat: 46.0673, lng: -118.2969 },
+  { name: 'Tranche',              lat: 46.0666, lng: -118.2962 },
+  { name: 'Walla Walla Vintners', lat: 46.0659, lng: -118.2975 },
+  // Westside
+  { name: 'Armstrong Family Winery',   lat: 46.0628, lng: -118.4128 },
+  { name: 'Canoe Ridge Vineyard',      lat: 46.0635, lng: -118.4215 },
+  { name: 'Cougar Crest Winery',       lat: 46.0621, lng: -118.4198 },
+  { name: 'Foundry Vineyards',         lat: 46.0614, lng: -118.4181 },
+  { name: 'G. Cuneo Cellars',          lat: 46.0607, lng: -118.4164 },
+  { name: 'Gramercy Cellars',          lat: 46.0600, lng: -118.4147 },
+  { name: "L'Ecole No. 41",            lat: 46.0593, lng: -118.4130 },
+  { name: 'Long Shadows Vintners',     lat: 46.0586, lng: -118.4113 },
+  { name: 'REALI Family Winery',       lat: 46.0642, lng: -118.4222 },
+  { name: 'Reininger Winery',          lat: 46.0579, lng: -118.4096 },
+  { name: 'Smoky Rose Cellars',        lat: 46.0572, lng: -118.4079 },
+  { name: 'Three Rivers Winery',       lat: 46.0565, lng: -118.4062 },
+  { name: 'Waterbrook Winery',         lat: 46.0558, lng: -118.4045 },
+  { name: 'Woodward Canyon',           lat: 46.0551, lng: -118.4028 },
+  { name: 'Morell Family Wines and Studio Twozerotwo', lat: 46.0544, lng: -118.4011 },
+  { name: 'The Walls Vineyards and PÁŠXA Wines', lat: 46.0537, lng: -118.3994 },
+  // Southside
+  { name: 'Amavi Cellars',         lat: 46.0285, lng: -118.3512 },
+  { name: 'Pepper Bridge Winery',  lat: 46.0278, lng: -118.3498 },
+  { name: 'Doubleback',            lat: 46.0271, lng: -118.3484 },
+  { name: 'Leonetti Cellar',       lat: 46.0264, lng: -118.3470 },
+  { name: 'Dusted Valley Vintners',lat: 46.0257, lng: -118.3456 },
+  { name: 'Balboa Winery',         lat: 46.0250, lng: -118.3442 },
+  { name: 'Va Piano Vineyards',    lat: 46.0243, lng: -118.3428 },
+  { name: 'Northstar Winery',      lat: 46.0236, lng: -118.3414 },
+  { name: 'Saviah Cellars',        lat: 46.0229, lng: -118.3400 },
+  { name: 'Isenhower Cellars',     lat: 46.0292, lng: -118.3526 },
+  { name: 'Brook and Bull Cellars',lat: 46.0299, lng: -118.3540 },
+  { name: 'Canvasback',            lat: 46.0306, lng: -118.3554 },
+  { name: 'Sleight of Hand Cellars',lat:46.0222, lng: -118.3386 },
+  { name: 'Rasa Vineyards',        lat: 46.0215, lng: -118.3372 },
+  { name: 'Revelry Vintners',      lat: 46.0208, lng: -118.3358 },
+  { name: 'Reynvaan Family Vineyards', lat: 46.0201, lng: -118.3344 },
+  { name: 'Garrison Creek Cellars',lat: 46.0194, lng: -118.3330 },
+  { name: 'Gifford Hirlinger',     lat: 46.0187, lng: -118.3316 },
+  { name: 'Alton Wines',           lat: 46.0180, lng: -118.3302 },
+  { name: 'Caprio Cellars',        lat: 46.0313, lng: -118.3568 },
+  { name: 'Dillon Cellars',        lat: 46.0320, lng: -118.3582 },
+  { name: 'Everen Wines',          lat: 46.0173, lng: -118.3288 },
+  { name: 'Grosgrain Vineyards',   lat: 46.0166, lng: -118.3274 },
+  { name: 'Kinhaven Winery',       lat: 46.0159, lng: -118.3260 },
+  { name: 'Mackey Vineyards',      lat: 46.0152, lng: -118.3246 },
+  { name: 'Patterson Cellars',     lat: 46.0145, lng: -118.3232 },
+  { name: 'SuLei Cellars',         lat: 46.0138, lng: -118.3218 },
+  { name: 'Valdemar Estates',      lat: 46.0131, lng: -118.3204 },
+  { name: 'Yellowhawk Resort and Sparkling House', lat: 46.0124, lng: -118.3190 },
+  // Rocks District
+  { name: 'Rotie Cellars',    lat: 45.9387, lng: -118.3865 },
+  { name: 'Watermill Winery', lat: 45.9241, lng: -118.4102 },
+];
+
+const DISTRICT_COLORS_HEX = {
+  downtown:  '#6d2b35',
+  airport:   '#1a4a6e',
+  eastside:  '#2a5425',
+  westside:  '#7a4915',
+  southside: '#5a2e6a',
+  rocks:     '#2e5c4a',
+};
+
+let mapInstance = null;
+
+function initMap() {
+  if (mapInstance) return;
+  mapInstance = L.map('mapView', { zoomControl: true, scrollWheelZoom: true })
+    .setView([46.065, -118.340], 12);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(mapInstance);
+  // place markers for every winery in our list
+  wineries.forEach(w => {
+    const loc = WINERY_LOCATIONS.find(l => l.name === w.name);
+    if (!loc) return;
+    const color  = DISTRICT_COLORS_HEX[w.district] || '#6d1535';
+    const fill   = w.visited ? color : '#fff';
+    const svg    = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="30" viewBox="0 0 22 30"><path d="M11 0C5 0 0 5 0 11c0 8 11 19 11 19s11-11 11-19C22 5 17 0 11 0z" fill="${fill}" stroke="${color}" stroke-width="2.5"/>${!w.visited?`<circle cx="11" cy="11" r="4" fill="${color}"/>`:`<text x="11" y="15" text-anchor="middle" font-size="9" fill="${w.visited?'#fff':color}">✓</text>`}</svg>`;
+    const icon   = L.divIcon({ html: svg, className: '', iconSize: [22, 30], iconAnchor: [11, 30], popupAnchor: [0, -30] });
+    const rating = w.rating ? ' &nbsp;' + '★'.repeat(w.rating) : '';
+    const status = w.visited ? '<span style="color:#2a5425">✓ Visited</span>' : 'Not yet visited';
+    L.marker([loc.lat, loc.lng], { icon })
+      .bindPopup(`<strong style="font-size:.92rem">${escHtml(w.name)}</strong><br><span style="font-size:.75rem;color:#888">${escHtml(DISTRICT_LABELS[w.district]||w.district)}</span><br><span style="font-size:.8rem">${status}${rating}</span>`)
+      .addTo(mapInstance);
+  });
+}
+
+function toggleMapView() {
+  const mapDiv  = document.getElementById('mapView');
+  const content = document.getElementById('mainContent');
+  const btn     = document.getElementById('mapToggleBtn');
+  const showing = btn.classList.contains('active');
+  if (showing) {
+    mapDiv.classList.remove('map-active');
+    content.style.display = '';
+    btn.classList.remove('active');
+  } else {
+    content.style.display = 'none';
+    btn.classList.add('active');
+    mapDiv.classList.add('map-active');
+    if (!mapInstance) {
+      // first open — give the browser a full paint cycle to lay out the div
+      setTimeout(() => { initMap(); }, 150);
+    } else {
+      mapInstance.invalidateSize();
+    }
+  }
+}
+
+function quickRate(e, id, val) {
+  e.stopPropagation();
+  const w = wineries.find(x => x.id === id);
+  if (!w) return;
+  w.rating = (w.rating === val) ? 0 : val;
+  saveData(); render();
+}
+
+// ── MODAL ─────────────────────────────────────────────────────────────────────
+
+function openModal(id) {
+  editingId = id;
+  const w = id ? wineries.find(x => x.id === id) : null;
+
+  document.getElementById('modalTitle').textContent = w ? 'Edit Winery' : 'Add Winery';
+  document.getElementById('modalDistrictTag').textContent = w ? DISTRICT_LABELS[w.district] : '';
+
+  const district = w ? w.district : 'downtown';
+  const dc = DISTRICT_COLORS[district] || DISTRICT_COLORS.downtown;
+  document.getElementById('modalHeader').style.background = `linear-gradient(135deg,${dc.dark},${dc.color})`;
+
+  document.getElementById('fieldName').value     = w ? w.name        : '';
+  document.getElementById('fieldDistrict').value = w ? w.district    : 'downtown';
+  document.getElementById('fieldDate').value     = w ? w.dateVisited : '';
+  document.getElementById('fieldNotes').value    = w ? w.notes       : '';
+
+  document.getElementById('nameGroup').style.display     = '';
+  document.getElementById('districtGroup').style.display = '';
+
+  modalVisited   = w ? w.visited  : false;
+  modalRating    = w ? w.rating   : 0;
+  modalVarietals = w ? [...w.varietals] : [];
+
+  updateVisitedUI();
+  renderStarPicker();
+  renderVarietalPicker();
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  editingId = null;
+}
+function overlayClick(e) { if (e.target === document.getElementById('modalOverlay')) closeModal(); }
+function toggleVisited() { modalVisited = !modalVisited; updateVisitedUI(); }
+function updateVisitedUI() {
+  document.getElementById('visitedSwitch').classList.toggle('on', modalVisited);
+  document.getElementById('visitedLabel').textContent = modalVisited ? 'Visited ✓' : 'Not yet visited';
+  document.getElementById('visitedFields').style.display = modalVisited ? 'flex' : 'none';
+}
+function setRating(val) { modalRating = (modalRating===val)?0:val; renderStarPicker(); }
+function renderStarPicker() {
+  document.querySelectorAll('#starPicker .star').forEach((s, i) => s.classList.toggle('lit', i < modalRating));
+}
+
+function renderVarietalPicker() {
+  document.getElementById('varietalPicker').innerHTML = VARIETAL_GROUPS.map(g => `
+    <div class="varietal-group">
+      <div class="varietal-group-label ${g.type}">${g.label}</div>
+      <div class="varietal-group-chips">
+        ${g.items.map(v => `
+          <button type="button"
+            class="varietal-option type-${g.type} ${modalVarietals.includes(v)?'selected':''}"
+            onclick="toggleVarietal('${v.replace(/'/g,"\\'").replace(/\//g,"\\/")}')">
+            ${escHtml(v)}
+          </button>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+function toggleVarietal(v) {
+  const idx = modalVarietals.indexOf(v);
+  if (idx >= 0) modalVarietals.splice(idx,1); else modalVarietals.push(v);
+  renderVarietalPicker();
+}
+
+function saveModal() {
+  const name     = document.getElementById('fieldName').value.trim();
+  const district = document.getElementById('fieldDistrict').value;
+  if (!editingId && !name) { document.getElementById('fieldName').focus(); return; }
+
+  if (editingId) {
+    const w = wineries.find(x => x.id === editingId);
+    if (!w) return;
+    w.name        = name || w.name;
+    w.district    = district;
+    w.visited     = modalVisited;
+    w.rating      = modalVisited ? modalRating : 0;
+    w.varietals   = modalVisited ? [...modalVarietals] : [];
+    w.notes       = modalVisited ? document.getElementById('fieldNotes').value.trim() : '';
+    w.dateVisited = modalVisited ? document.getElementById('fieldDate').value : '';
+  } else {
+    wineries.push({ id:'w_'+Math.random().toString(36).slice(2), name, district,
+      visited:false, dateVisited:'', rating:0, varietals:[], notes:'' });
+  }
+  saveData(); closeModal(); render();
+}
+
+
+// ── UTILS ─────────────────────────────────────────────────────────────────────
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function formatDate(iso) {
+  if (!iso) return '';
+  const [y,m,d] = iso.split('-');
+  const mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${mo[+m-1]} ${+d}, ${y}`;
+}
+
+document.addEventListener('keydown', e => { if (e.key==='Escape'){ closeModal(); closeUncheck(); closePlanner(); }});
+
+// ── INIT varietal select ──────────────────────────────────────────────────────
+
+(function buildVarietalSelect() {
+  const sel = document.getElementById('varietalSelect');
+  VARIETAL_GROUPS.forEach(g => {
+    const og = document.createElement('optgroup');
+    og.label = g.label;
+    g.items.forEach(v => {
+      const opt = document.createElement('option');
+      opt.value = v; opt.textContent = v;
+      og.appendChild(opt);
+    });
+    sel.appendChild(og);
+  });
+})();
+
+render();
+updatePlanBadge();
+
+// ── PWA: register service worker for offline app-shell caching ───────────────
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

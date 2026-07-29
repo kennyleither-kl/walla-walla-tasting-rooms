@@ -1,0 +1,17 @@
+{
+  "name": "Walla Walla Tasting Rooms",
+  "short_name": "WW Wineries",
+  "description": "Track visits, ratings, and plan trips across Walla Walla Valley tasting rooms.",
+  "start_url": "./walla-walla-tasting-rooms.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#faf3e7",
+  "theme_color": "#6d1535",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
