@@ -1209,7 +1209,9 @@ function openModal(id) {
   document.getElementById('fieldNotes').value    = w ? w.notes       : '';
 
   document.getElementById('nameGroup').style.display     = '';
-  document.getElementById('districtGroup').style.display = '';
+  // District is fixed when reviewing an existing winery (shown in the header tag);
+  // the picker only appears when adding a new custom winery.
+  document.getElementById('districtGroup').style.display = w ? 'none' : '';
   document.getElementById('deleteBtn').style.display     = w ? '' : 'none';
 
   modalVisited   = w ? w.visited  : false;
