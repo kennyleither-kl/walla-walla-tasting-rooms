@@ -102,11 +102,6 @@
   .district-section.collapsed .winery-grid { display: none; }
   .district-section.collapsed { border-radius: 14px; }
 
-  /* ranked flat view */
-  .ranked-section { margin-bottom: 36px; }
-  .ranked-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(295px, 1fr)); gap: 12px; }
-  .ranked-subhead { font-size: .78rem; font-family: sans-serif; color: var(--gray-4); text-transform: uppercase; letter-spacing: .08em; margin: 18px 0 8px; padding-bottom: 5px; border-bottom: 1px solid var(--gray-2); }
-
   /* ── WINERY CARD ── */
   .winery-card { background: #fff; border-radius: var(--radius); border: 1px solid var(--gray-2); padding: 14px 14px 12px; cursor: pointer; transition: box-shadow .15s, border-color .15s, transform .1s; position: relative; }
   .winery-card:hover { box-shadow: var(--shadow); border-color: var(--gray-3); transform: translateY(-1px); }
@@ -115,18 +110,11 @@
   .winery-card.unvisited-varietal { opacity: .65; }
 
   .card-top { display: flex; align-items: flex-start; gap: 9px; }
-  .card-checkbox { width: 20px; height: 20px; min-width: 20px; border: 2px solid var(--gray-3); border-radius: 50%; margin-top: 2px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all .15s; }
+  .card-checkbox { width: 20px; height: 20px; min-width: 20px; border: 2px solid var(--gray-3); border-radius: 50%; margin-top: 2px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
   .card-checkbox.checked { background: var(--d-color); border-color: var(--d-color); }
   .card-checkbox.checked::after { content: '✓'; color: #fff; font-size: .72rem; font-weight: bold; }
   .card-name { font-size: .93rem; font-weight: 500; flex: 1; line-height: 1.35; letter-spacing: .01em; }
   .card-district-badge { font-size: .66rem; padding: 2px 8px; border-radius: 10px; background: var(--gray-1); color: var(--gray-4); border: 1px solid var(--gray-2); white-space: nowrap; font-family: sans-serif; flex-shrink: 0; }
-
-  /* rank badge */
-  .rank-badge { position: absolute; top: -1px; left: -1px; width: 26px; height: 26px; border-radius: 10px 0 8px 0; display: flex; align-items: center; justify-content: center; font-size: .72rem; font-weight: bold; font-family: sans-serif; }
-  .rank-badge.gold   { background: #f5c518; color: #5c3d00; }
-  .rank-badge.silver { background: #c0c8d0; color: #2a3038; }
-  .rank-badge.bronze { background: #cd8a4a; color: #4a2808; }
-  .rank-badge.plain  { background: var(--gray-2); color: var(--gray-4); }
 
   .card-stars { display: flex; gap: 2px; margin: 7px 0 3px 29px; }
   .star { font-size: 1rem; cursor: pointer; color: var(--gray-3); transition: color .1s; }
@@ -200,6 +188,8 @@
   .btn-save:hover { background: #4b0e24; }
   .btn-cancel { padding: 9px 20px; background: none; border: 1px solid var(--gray-3); border-radius: 8px; font-size: .9rem; cursor: pointer; font-family: inherit; }
   .btn-cancel:hover { background: var(--gray-1); }
+  .btn-delete { margin-right: auto; padding: 9px 16px; background: none; border: 1px solid transparent; border-radius: 8px; font-size: .9rem; cursor: pointer; font-family: inherit; color: #c0392b; }
+  .btn-delete:hover { background: #fdecea; border-color: #e8b0a8; }
 
   .confirm-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 2000; align-items: center; justify-content: center; }
   .confirm-overlay.open { display: flex; }
@@ -216,12 +206,8 @@
     header h1 { font-size: 1.6rem; }
     .controls { padding: 9px 14px; }
     main { padding: 14px 10px; }
-    .winery-grid, .ranked-grid { grid-template-columns: 1fr; padding: 10px; }
+    .winery-grid { grid-template-columns: 1fr; padding: 10px; }
   }
-
-  /* ── MAP BUTTON ── */
-  .btn-map { padding: 7px 14px; background: #fff; color: var(--gray-4); border: 1px solid var(--gray-3); border-radius: 20px; font-size: .82rem; cursor: pointer; font-family: inherit; transition: all .14s; }
-  .btn-map:hover { background: var(--gray-1); border-color: var(--gray-4); color: var(--text); }
 
   /* ── TRIP PLANNER ── */
   .btn-plan-toggle { padding: 7px 14px; background: #fff; color: var(--gray-4); border: 1px solid var(--gray-3); border-radius: 20px; font-size: .82rem; cursor: pointer; font-family: inherit; transition: all .14s; position: relative; }
@@ -334,11 +320,10 @@
   .btn-clear-plan { padding: 7px; background: none; border: none; font-size: .78rem; cursor: pointer; font-family: inherit; color: var(--gray-3); transition: color .14s; text-align: center; }
   .btn-clear-plan:hover { color: #c00; }
 
-  /* card add button */
-  .card-plan-btn { background: none; border: none; cursor: pointer; font-size: .82rem; line-height: 1; color: var(--gray-3); transition: color .14s, transform .12s; padding: 2px 0 2px 4px; flex-shrink: 0; font-family: sans-serif; font-weight: bold; }
-  .card-plan-btn:hover { color: #6d1535; transform: scale(1.2); }
-  .card-map-btn { background: none; border: none; cursor: pointer; font-size: .9rem; line-height: 1; transition: transform .12s, filter .14s; padding: 2px 2px 2px 4px; flex-shrink: 0; filter: grayscale(.5) opacity(.6); }
-  .card-map-btn:hover { filter: none; transform: scale(1.2); }
+  /* card add-to-plan pill */
+  .card-plan-btn { display: inline-flex; align-items: center; gap: 3px; background: #fff; border: 1px solid var(--gray-3); cursor: pointer; font-size: .66rem; line-height: 1; color: var(--gray-4); border-radius: 10px; padding: 4px 9px; flex-shrink: 0; font-family: sans-serif; font-weight: 600; letter-spacing: .02em; transition: all .14s; white-space: nowrap; }
+  .card-plan-btn:hover { border-color: #6d1535; color: #6d1535; }
+  .card-plan-btn.in-plan { background: #6d1535; border-color: #6d1535; color: #fff; }
 </style>
 </head>
 <body>
@@ -349,7 +334,7 @@
   <div class="hero-content">
     <div class="title-block">
       <h1>Walla Walla</h1>
-      <p>Walla Walla Valley &mdash; Washington &amp; Oregon</p>
+      <p>Walla Walla Valley &mdash; Washington &amp; Oregon tasting rooms</p>
     </div>
     <div class="stats-bar" id="statsBar"></div>
   </div>
@@ -360,6 +345,7 @@
   <div class="filter-group">
     <button class="filter-btn active" data-filter="all"       onclick="setFilter('all')">All</button>
     <button class="filter-btn"        data-filter="visited"   onclick="setFilter('visited')">Visited</button>
+    <button class="filter-btn"        data-filter="unvisited" onclick="setFilter('unvisited')">To Go</button>
   </div>
   <div class="filter-group">
     <button class="filter-btn" data-filter="downtown"  onclick="setFilter('downtown')">Downtown</button>
@@ -369,7 +355,6 @@
     <button class="filter-btn" data-filter="southside" onclick="setFilter('southside')">Southside</button>
     <button class="filter-btn" data-filter="rocks"     onclick="setFilter('rocks')">Rocks District</button>
   </div>
-  <button class="btn-map" id="mapToggleBtn" onclick="openAreaMap()">🗺 Map</button>
   <button class="btn-plan-toggle" id="planToggleBtn" onclick="openPlanner()">📋 Plan <span class="plan-count-badge" id="planBadge" style="display:none">0</span></button>
   <button class="btn-add" onclick="openModal(null)">+ Add Winery</button>
 </div>
@@ -446,7 +431,7 @@
         <div class="toggle-switch" id="visitedSwitch"></div>
         <span class="toggle-label" id="visitedLabel">Not yet visited</span>
       </div>
-      <div id="visitedFields" style="display:none; flex-direction:column; gap:18px;">
+      <div id="visitedFields" style="display:flex; flex-direction:column; gap:18px;">
         <div class="form-group">
           <label>Date Visited</label>
           <input type="date" id="fieldDate">
@@ -472,6 +457,7 @@
       </div>
     </div>
     <div class="modal-footer">
+      <button class="btn-delete" id="deleteBtn" onclick="askDeleteWinery()">Delete</button>
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
       <button class="btn-save"   onclick="saveModal()">Save</button>
     </div>
@@ -479,17 +465,17 @@
 </div>
 
 <!-- Confirm Delete -->
-<!-- Confirm Uncheck -->
-<div class="confirm-overlay" id="uncheckOverlay">
+<div class="confirm-overlay" id="deleteOverlay">
   <div class="confirm-box">
-    <h4>Clear Visit Data?</h4>
-    <p id="uncheckConfirmText"></p>
+    <h4>Delete Winery?</h4>
+    <p id="deleteConfirmText"></p>
     <div class="confirm-btns">
-      <button class="btn-cancel" onclick="closeUncheck()">Cancel</button>
-      <button class="btn-danger" onclick="confirmUncheck()">Clear &amp; Unmark</button>
+      <button class="btn-cancel" onclick="closeDelete()">Cancel</button>
+      <button class="btn-danger" onclick="confirmDeleteWinery()">Delete</button>
     </div>
   </div>
 </div>
+
 
 <script>
 // ── VARIETAL TAXONOMY ─────────────────────────────────────────────────────────
@@ -702,7 +688,6 @@ let wineries = loadData();
 let currentFilter         = 'all';
 let collapsedDistricts    = loadUiState();
 let editingId        = null;
-let uncheckPendingId = null;
 let planList        = [];
 let planDoneSet     = new Set();   // ids checked off on the day
 let planNotes       = {};          // id -> per-stop note string
@@ -753,7 +738,7 @@ function render() {
 
   // base filter
   let filtered = wineries.filter(w => {
-    if (query && !w.name.toLowerCase().includes(query)) return false;
+    if (query && !wineryMatchesQuery(w, query)) return false;
     if (currentFilter === 'all')       return true;
     if (currentFilter === 'visited')   return w.visited;
     if (currentFilter === 'unvisited') return !w.visited;
@@ -793,6 +778,16 @@ function render() {
   main.innerHTML = any ? html : '<div class="empty">No wineries match your search or filter.</div>';
 }
 
+// Matches a winery against the search query by name, district, varietals, or notes.
+function wineryMatchesQuery(w, query) {
+  if (w.name.toLowerCase().includes(query)) return true;
+  const districtLabel = (DISTRICT_LABELS[w.district] || w.district).toLowerCase();
+  if (districtLabel.includes(query)) return true;
+  if (w.varietals.some(v => v.toLowerCase().includes(query))) return true;
+  if (w.notes && w.notes.toLowerCase().includes(query)) return true;
+  return false;
+}
+
 // ── CARD HTML ─────────────────────────────────────────────────────────────────
 
 function chipHTML(v, highlight) {
@@ -807,53 +802,21 @@ function cardHTML(w, showDistrict) {
   const chips = sortVarietals(w.varietals).map(v => chipHTML(v, false)).join('');
   const badge = showDistrict
     ? `<span class="card-district-badge">${DISTRICT_LABELS[w.district]}</span>` : '';
-  const planBtn = `<button class="card-plan-btn" title="Add to plan" onclick="togglePlan(event,'${w.id}')">+</button>`;
-  const mapBtn  = `<button class="card-map-btn" title="Open in Google Maps" onclick="openWineryMap(event,'${w.id}')">🗺</button>`;
+  const inPlan  = planList.includes(w.id);
+  const planBtn = `<button class="card-plan-btn ${inPlan?'in-plan':''}" title="${inPlan?'Remove from trip plan':'Add to trip plan'}" onclick="togglePlan(event,'${w.id}')">${inPlan?'✓ Planned':'+ Plan'}</button>`;
 
   return `
     <div class="winery-card ${w.visited?'visited':''}" onclick="openModal('${w.id}')">
       <div class="card-top">
-        <div class="card-checkbox ${w.visited?'checked':''}" onclick="toggleVisitedCard(event,'${w.id}')"></div>
+        <div class="card-checkbox ${w.visited?'checked':''}"></div>
         <span class="card-name">${escHtml(w.name)}</span>
         ${badge}
-        ${mapBtn}
         ${planBtn}
       </div>
       ${w.visited?`<div class="card-stars">${stars}</div>`:''}
       ${chips?`<div class="card-varietals">${chips}</div>`:''}
       ${w.notes?`<div class="card-note">${escHtml(w.notes)}</div>`:''}
       ${w.dateVisited?`<div class="card-date">Visited ${formatDate(w.dateVisited)}</div>`:''}
-    </div>`;
-}
-
-function rankedCardHTML(w, rank, highlightVarietal) {
-  const stars = [1,2,3,4,5].map(i =>
-    `<span class="star ${i<=w.rating?'lit':''}" onclick="quickRate(event,'${w.id}',${i})">★</span>`
-  ).join('');
-  const chips = sortVarietals(w.varietals).map(v => chipHTML(v, v === highlightVarietal)).join('');
-
-  let rankClass = 'plain', rankLabel = String(rank);
-  if (rank === 1) { rankClass = 'gold';   rankLabel = '🥇'; }
-  if (rank === 2) { rankClass = 'silver'; rankLabel = '🥈'; }
-  if (rank === 3) { rankClass = 'bronze'; rankLabel = '🥉'; }
-
-  const planBtnR = `<button class="card-plan-btn" title="Add to plan" onclick="togglePlan(event,'${w.id}')">+</button>`;
-  const mapBtnR  = `<button class="card-map-btn" title="Open in Google Maps" onclick="openWineryMap(event,'${w.id}')">🗺</button>`;
-
-  return `
-    <div class="winery-card visited" onclick="openModal('${w.id}')" style="padding-left:18px">
-      <div class="rank-badge ${rankClass}">${rankLabel}</div>
-      <div class="card-top" style="margin-left:4px">
-        <div class="card-checkbox checked" onclick="toggleVisitedCard(event,'${w.id}')"></div>
-        <span class="card-name">${escHtml(w.name)}</span>
-        <span class="card-district-badge">${DISTRICT_LABELS[w.district]}</span>
-        ${mapBtnR}
-        ${planBtnR}
-      </div>
-      <div class="card-stars" style="margin-left:33px">${stars}</div>
-      ${chips?`<div class="card-varietals" style="margin-left:33px">${chips}</div>`:''}
-      ${w.notes?`<div class="card-note" style="margin-left:33px">${escHtml(w.notes)}</div>`:''}
-      ${w.dateVisited?`<div class="card-date" style="margin-left:33px">Visited ${formatDate(w.dateVisited)}</div>`:''}
     </div>`;
 }
 
@@ -876,39 +839,18 @@ function setFilter(f) {
   render();
 }
 
-// ── QUICK ACTIONS ─────────────────────────────────────────────────────────────
-
-function toggleVisitedCard(e, id) {
-  e.stopPropagation();
-  const w = wineries.find(x => x.id === id);
-  if (!w) return;
-  if (w.visited && (w.rating > 0 || w.notes || w.varietals.length)) {
-    // Has data worth preserving — confirm before clearing
-    uncheckPendingId = id;
-    document.getElementById('uncheckConfirmText').textContent =
-      `Mark "${w.name}" as not visited? This will clear your rating, notes, and varietals.`;
-    document.getElementById('uncheckOverlay').classList.add('open');
-    return;
-  }
-  w.visited = !w.visited;
-  if (!w.visited) { w.rating = 0; w.varietals = []; w.notes = ''; w.dateVisited = ''; }
-  saveData(); render();
-}
-function closeUncheck() { document.getElementById('uncheckOverlay').classList.remove('open'); uncheckPendingId = null; }
-function confirmUncheck() {
-  if (!uncheckPendingId) return;
-  const w = wineries.find(x => x.id === uncheckPendingId);
-  if (w) { w.visited = false; w.rating = 0; w.varietals = []; w.notes = ''; w.dateVisited = ''; }
-  saveData(); closeUncheck(); render();
-}
-
 /* ── TRIP PLANNER ──────────────────────────────────────────────────────────── */
 
 function togglePlan(e, id) {
   e.stopPropagation();
-  if (!planList.includes(id)) planList.push(id);
+  const i = planList.indexOf(id);
+  if (i >= 0) { planList.splice(i, 1); planDoneSet.delete(id); }
+  else        { planList.push(id); }
   savePlan();
+  savePlanMeta();
   updatePlanBadge();
+  render();
+  if (document.getElementById('plannerPanel').classList.contains('open')) renderPlannerPanel();
 }
 
 function updatePlanBadge() {
@@ -1238,32 +1180,7 @@ function copyItinerary() {
   }).catch(() => alert('Copy not supported in this browser'));
 }
 
-/* ── MAP (open in Google Maps) ─────────────────────────────────────────────── */
-
-// Opens Google Maps searching for tasting rooms across the Walla Walla Valley.
-// Honors the active district filter so "Map" shows the district you're viewing.
-function openAreaMap() {
-  const districtQuery = {
-    downtown:  'downtown Walla Walla WA',
-    airport:   'Walla Walla Airport District wineries, Walla Walla WA',
-    eastside:  'east side Walla Walla WA wineries',
-    westside:  'west Walla Walla WA wineries',
-    southside: 'south Walla Walla WA wineries',
-    rocks:     'Rocks District Milton-Freewater OR wineries',
-  };
-  const area = districtQuery[currentFilter] || 'Walla Walla Valley WA';
-  const q = encodeURIComponent('wine tasting rooms ' + area);
-  window.open('https://www.google.com/maps/search/' + q, '_blank', 'noopener');
-}
-
-// Opens a single winery's location in Google Maps by name (reliable — no stored coords).
-function openWineryMap(e, id) {
-  e.stopPropagation();
-  const w = wineries.find(x => x.id === id);
-  if (!w) return;
-  const q = encodeURIComponent(w.name + ' Walla Walla WA');
-  window.open('https://www.google.com/maps/search/' + q, '_blank', 'noopener');
-}
+/* ── QUICK RATE (tap a star on a card) ─────────────────────────────────────── */
 
 function quickRate(e, id, val) {
   e.stopPropagation();
@@ -1293,6 +1210,7 @@ function openModal(id) {
 
   document.getElementById('nameGroup').style.display     = '';
   document.getElementById('districtGroup').style.display = '';
+  document.getElementById('deleteBtn').style.display     = w ? '' : 'none';
 
   modalVisited   = w ? w.visited  : false;
   modalRating    = w ? w.rating   : 0;
@@ -1313,7 +1231,6 @@ function toggleVisited() { modalVisited = !modalVisited; updateVisitedUI(); }
 function updateVisitedUI() {
   document.getElementById('visitedSwitch').classList.toggle('on', modalVisited);
   document.getElementById('visitedLabel').textContent = modalVisited ? 'Visited ✓' : 'Not yet visited';
-  document.getElementById('visitedFields').style.display = modalVisited ? 'flex' : 'none';
 }
 function setRating(val) { modalRating = (modalRating===val)?0:val; renderStarPicker(); }
 function renderStarPicker() {
@@ -1352,15 +1269,47 @@ function saveModal() {
     w.name        = name || w.name;
     w.district    = district;
     w.visited     = modalVisited;
-    w.rating      = modalVisited ? modalRating : 0;
-    w.varietals   = modalVisited ? [...modalVarietals] : [];
-    w.notes       = modalVisited ? document.getElementById('fieldNotes').value.trim() : '';
-    w.dateVisited = modalVisited ? document.getElementById('fieldDate').value : '';
+    w.rating      = modalRating;
+    w.varietals   = [...modalVarietals];
+    w.notes       = document.getElementById('fieldNotes').value.trim();
+    w.dateVisited = document.getElementById('fieldDate').value;
   } else {
     wineries.push({ id:'w_'+Math.random().toString(36).slice(2), name, district,
       visited:false, dateVisited:'', rating:0, varietals:[], notes:'' });
   }
   saveData(); closeModal(); render();
+}
+
+// ── DELETE WINERY ───────────────────────────────────────────────────────────
+let deletePendingId = null;
+
+function askDeleteWinery() {
+  if (!editingId) return;
+  const w = wineries.find(x => x.id === editingId);
+  if (!w) return;
+  deletePendingId = editingId;
+  document.getElementById('deleteConfirmText').textContent =
+    `Permanently remove "${w.name}"? This can't be undone.`;
+  document.getElementById('deleteOverlay').classList.add('open');
+}
+
+function closeDelete() {
+  document.getElementById('deleteOverlay').classList.remove('open');
+  deletePendingId = null;
+}
+
+function confirmDeleteWinery() {
+  if (!deletePendingId) return;
+  const id = deletePendingId;
+  wineries = wineries.filter(x => x.id !== id);
+  // also remove from any trip plan
+  const pi = planList.indexOf(id);
+  if (pi >= 0) planList.splice(pi, 1);
+  planDoneSet.delete(id);
+  delete planNotes[id];
+  saveData(); savePlan(); savePlanMeta();
+  closeDelete(); closeModal();
+  updatePlanBadge(); render();
 }
 
 
@@ -1376,7 +1325,7 @@ function formatDate(iso) {
   return `${mo[+m-1]} ${+d}, ${y}`;
 }
 
-document.addEventListener('keydown', e => { if (e.key==='Escape'){ closeModal(); closeUncheck(); closePlanner(); }});
+document.addEventListener('keydown', e => { if (e.key==='Escape'){ closeModal(); closeDelete(); closePlanner(); }});
 
 render();
 updatePlanBadge();
