@@ -21,8 +21,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 <style>
   :root {
     --gold:     #787542;
@@ -221,12 +219,9 @@
     .winery-grid, .ranked-grid { grid-template-columns: 1fr; padding: 10px; }
   }
 
-  /* ── MAP VIEW ── */
-  #mapView { visibility: hidden; pointer-events: none; height: calc(100vh - 220px); min-height: 400px; margin: 0; border-top: 1px solid var(--gray-2); }
-  #mapView.map-active { visibility: visible; pointer-events: auto; }
+  /* ── MAP BUTTON ── */
   .btn-map { padding: 7px 14px; background: #fff; color: var(--gray-4); border: 1px solid var(--gray-3); border-radius: 20px; font-size: .82rem; cursor: pointer; font-family: inherit; transition: all .14s; }
   .btn-map:hover { background: var(--gray-1); border-color: var(--gray-4); color: var(--text); }
-  .btn-map.active { background: var(--text); color: #fff; border-color: var(--text); }
 
   /* ── TRIP PLANNER ── */
   .btn-plan-toggle { padding: 7px 14px; background: #fff; color: var(--gray-4); border: 1px solid var(--gray-3); border-radius: 20px; font-size: .82rem; cursor: pointer; font-family: inherit; transition: all .14s; position: relative; }
@@ -342,6 +337,8 @@
   /* card add button */
   .card-plan-btn { background: none; border: none; cursor: pointer; font-size: .82rem; line-height: 1; color: var(--gray-3); transition: color .14s, transform .12s; padding: 2px 0 2px 4px; flex-shrink: 0; font-family: sans-serif; font-weight: bold; }
   .card-plan-btn:hover { color: #6d1535; transform: scale(1.2); }
+  .card-map-btn { background: none; border: none; cursor: pointer; font-size: .9rem; line-height: 1; transition: transform .12s, filter .14s; padding: 2px 2px 2px 4px; flex-shrink: 0; filter: grayscale(.5) opacity(.6); }
+  .card-map-btn:hover { filter: none; transform: scale(1.2); }
 </style>
 </head>
 <body>
@@ -372,14 +369,12 @@
     <button class="filter-btn" data-filter="southside" onclick="setFilter('southside')">Southside</button>
     <button class="filter-btn" data-filter="rocks"     onclick="setFilter('rocks')">Rocks District</button>
   </div>
-  <button class="btn-map" id="mapToggleBtn" onclick="toggleMapView()">🗺 Map</button>
+  <button class="btn-map" id="mapToggleBtn" onclick="openAreaMap()">🗺 Map</button>
   <button class="btn-plan-toggle" id="planToggleBtn" onclick="openPlanner()">📋 Plan <span class="plan-count-badge" id="planBadge" style="display:none">0</span></button>
   <button class="btn-add" onclick="openModal(null)">+ Add Winery</button>
 </div>
 
 <main id="mainContent"></main>
-
-<div id="mapView"></div>
 
 <!-- Trip Planner Panel -->
 <div class="planner-scrim" id="plannerScrim" onclick="closePlanner()"></div>
@@ -813,6 +808,7 @@ function cardHTML(w, showDistrict) {
   const badge = showDistrict
     ? `<span class="card-district-badge">${DISTRICT_LABELS[w.district]}</span>` : '';
   const planBtn = `<button class="card-plan-btn" title="Add to plan" onclick="togglePlan(event,'${w.id}')">+</button>`;
+  const mapBtn  = `<button class="card-map-btn" title="Open in Google Maps" onclick="openWineryMap(event,'${w.id}')">🗺</button>`;
 
   return `
     <div class="winery-card ${w.visited?'visited':''}" onclick="openModal('${w.id}')">
@@ -820,6 +816,7 @@ function cardHTML(w, showDistrict) {
         <div class="card-checkbox ${w.visited?'checked':''}" onclick="toggleVisitedCard(event,'${w.id}')"></div>
         <span class="card-name">${escHtml(w.name)}</span>
         ${badge}
+        ${mapBtn}
         ${planBtn}
       </div>
       ${w.visited?`<div class="card-stars">${stars}</div>`:''}
@@ -841,6 +838,7 @@ function rankedCardHTML(w, rank, highlightVarietal) {
   if (rank === 3) { rankClass = 'bronze'; rankLabel = '🥉'; }
 
   const planBtnR = `<button class="card-plan-btn" title="Add to plan" onclick="togglePlan(event,'${w.id}')">+</button>`;
+  const mapBtnR  = `<button class="card-map-btn" title="Open in Google Maps" onclick="openWineryMap(event,'${w.id}')">🗺</button>`;
 
   return `
     <div class="winery-card visited" onclick="openModal('${w.id}')" style="padding-left:18px">
@@ -849,6 +847,7 @@ function rankedCardHTML(w, rank, highlightVarietal) {
         <div class="card-checkbox checked" onclick="toggleVisitedCard(event,'${w.id}')"></div>
         <span class="card-name">${escHtml(w.name)}</span>
         <span class="card-district-badge">${DISTRICT_LABELS[w.district]}</span>
+        ${mapBtnR}
         ${planBtnR}
       </div>
       <div class="card-stars" style="margin-left:33px">${stars}</div>
@@ -1239,174 +1238,31 @@ function copyItinerary() {
   }).catch(() => alert('Copy not supported in this browser'));
 }
 
-/* ── MAP VIEW ──────────────────────────────────────────────────────────────── */
+/* ── MAP (open in Google Maps) ─────────────────────────────────────────────── */
 
-const WINERY_LOCATIONS = [
-  // Downtown
-  { name: 'Beekeeper by Abeja',                lat: 46.0651, lng: -118.3432 },
-  { name: 'Bledsoe Family Winery',             lat: 46.0649, lng: -118.3438 },
-  { name: 'Browne Family Vineyards',           lat: 46.0657, lng: -118.3424 },
-  { name: 'Cayuse Vineyards',                  lat: 46.0644, lng: -118.3443 },
-  { name: 'Corliss',                           lat: 46.0642, lng: -118.3450 },
-  { name: 'DAMA Wines',                        lat: 46.0660, lng: -118.3418 },
-  { name: 'El Corazon Winery',                 lat: 46.0655, lng: -118.3410 },
-  { name: 'Forgeron Cellars',                  lat: 46.0648, lng: -118.3455 },
-  { name: 'Gård Vintners',                     lat: 46.0652, lng: -118.3415 },
-  { name: 'Heritage by L\'Ecole Wine Bar',     lat: 46.0658, lng: -118.3430 },
-  { name: 'House of Smith',                    lat: 46.0645, lng: -118.3420 },
-  { name: 'Kontos Cellars',                    lat: 46.0653, lng: -118.3408 },
-  { name: 'Lagana Cellars',                    lat: 46.0646, lng: -118.3462 },
-  { name: 'Locati Cellars',                    lat: 46.0661, lng: -118.3445 },
-  { name: 'Maison Bleue Family Winery',        lat: 46.0640, lng: -118.3412 },
-  { name: 'Mark Ryan Winery',                  lat: 46.0654, lng: -118.3400 },
-  { name: 'Mercer Wine Estates Tasting Room',  lat: 46.0643, lng: -118.3427 },
-  { name: 'Plumb Cellars',                     lat: 46.0659, lng: -118.3403 },
-  { name: 'Pursued by Bear',                   lat: 46.0647, lng: -118.3416 },
-  { name: 'Seven Hills Winery',                lat: 46.0641, lng: -118.3440 },
-  { name: 'Spring Valley Vineyard',            lat: 46.0656, lng: -118.3452 },
-  { name: 'TruthTeller Winery',                lat: 46.0663, lng: -118.3435 },
-  { name: 'Vital Wines',                       lat: 46.0638, lng: -118.3422 },
-  { name: 'Foolhardy Vintners',                lat: 46.0650, lng: -118.3428 },
-  { name: 'Bontzu Cellars',                    lat: 46.0636, lng: -118.3448 },
-  { name: 'Capital Call Vintners',             lat: 46.0662, lng: -118.3414 },
-  { name: 'Henry Earl Estates & Russell Creek',lat: 46.0664, lng: -118.3406 },
-  { name: 'Lagana Cellars',                    lat: 46.0639, lng: -118.3458 },
-  { name: 'Lawrelin Wine Cellars',             lat: 46.0665, lng: -118.3420 },
-  { name: 'Lodmell Cellars',                   lat: 46.0637, lng: -118.3464 },
-  { name: 'Time & Direction',                  lat: 46.0666, lng: -118.3412 },
-  { name: 'Turtle Wines',                      lat: 46.0635, lng: -118.3470 },
-  // Airport
-  { name: 'Dunham Cellars',    lat: 46.0972, lng: -118.2841 },
-  { name: 'Tamarack Cellars',  lat: 46.0965, lng: -118.2836 },
-  { name: 'Five Star Cellars', lat: 46.0958, lng: -118.2843 },
-  { name: 'SYZYGY Winery',     lat: 46.0970, lng: -118.2850 },
-  { name: 'CAVU Cellars',      lat: 46.0963, lng: -118.2858 },
-  { name: 'Adamant Cellars',   lat: 46.0975, lng: -118.2863 },
-  { name: 'Arenness Cellars',  lat: 46.0968, lng: -118.2870 },
-  { name: 'Eleganté Cellars',  lat: 46.0961, lng: -118.2830 },
-  { name: 'itä wines',         lat: 46.0954, lng: -118.2837 },
-  { name: 'Prospice Wines',    lat: 46.0947, lng: -118.2844 },
-  { name: 'SMAK Wines',        lat: 46.0973, lng: -118.2828 },
-  { name: 'Tempus Cellars',    lat: 46.0966, lng: -118.2821 },
-  // Eastside
-  { name: 'Abeja Winery',         lat: 46.0722, lng: -118.2971 },
-  { name: 'ALUVÉ',                lat: 46.0715, lng: -118.2980 },
-  { name: 'aMaurice Cellars',     lat: 46.0708, lng: -118.2964 },
-  { name: 'College Cellars',      lat: 46.0701, lng: -118.2957 },
-  { name: 'Echolands Winery',     lat: 46.0694, lng: -118.2970 },
-  { name: 'FIGGINS',              lat: 46.0687, lng: -118.2963 },
-  { name: 'K Vintners',           lat: 46.0680, lng: -118.2956 },
-  { name: 'Leonetti Cellar',      lat: 46.0673, lng: -118.2969 },
-  { name: 'Tranche',              lat: 46.0666, lng: -118.2962 },
-  { name: 'Walla Walla Vintners', lat: 46.0659, lng: -118.2975 },
-  // Westside
-  { name: 'Armstrong Family Winery',   lat: 46.0628, lng: -118.4128 },
-  { name: 'Canoe Ridge Vineyard',      lat: 46.0635, lng: -118.4215 },
-  { name: 'Cougar Crest Winery',       lat: 46.0621, lng: -118.4198 },
-  { name: 'Foundry Vineyards',         lat: 46.0614, lng: -118.4181 },
-  { name: 'G. Cuneo Cellars',          lat: 46.0607, lng: -118.4164 },
-  { name: 'Gramercy Cellars',          lat: 46.0600, lng: -118.4147 },
-  { name: "L'Ecole No. 41",            lat: 46.0593, lng: -118.4130 },
-  { name: 'Long Shadows Vintners',     lat: 46.0586, lng: -118.4113 },
-  { name: 'REALI Family Winery',       lat: 46.0642, lng: -118.4222 },
-  { name: 'Reininger Winery',          lat: 46.0579, lng: -118.4096 },
-  { name: 'Smoky Rose Cellars',        lat: 46.0572, lng: -118.4079 },
-  { name: 'Three Rivers Winery',       lat: 46.0565, lng: -118.4062 },
-  { name: 'Waterbrook Winery',         lat: 46.0558, lng: -118.4045 },
-  { name: 'Woodward Canyon',           lat: 46.0551, lng: -118.4028 },
-  { name: 'Morell Family Wines and Studio Twozerotwo', lat: 46.0544, lng: -118.4011 },
-  { name: 'The Walls Vineyards and PÁŠXA Wines', lat: 46.0537, lng: -118.3994 },
-  // Southside
-  { name: 'Amavi Cellars',         lat: 46.0285, lng: -118.3512 },
-  { name: 'Pepper Bridge Winery',  lat: 46.0278, lng: -118.3498 },
-  { name: 'Doubleback',            lat: 46.0271, lng: -118.3484 },
-  { name: 'Leonetti Cellar',       lat: 46.0264, lng: -118.3470 },
-  { name: 'Dusted Valley Vintners',lat: 46.0257, lng: -118.3456 },
-  { name: 'Balboa Winery',         lat: 46.0250, lng: -118.3442 },
-  { name: 'Va Piano Vineyards',    lat: 46.0243, lng: -118.3428 },
-  { name: 'Northstar Winery',      lat: 46.0236, lng: -118.3414 },
-  { name: 'Saviah Cellars',        lat: 46.0229, lng: -118.3400 },
-  { name: 'Isenhower Cellars',     lat: 46.0292, lng: -118.3526 },
-  { name: 'Brook and Bull Cellars',lat: 46.0299, lng: -118.3540 },
-  { name: 'Canvasback',            lat: 46.0306, lng: -118.3554 },
-  { name: 'Sleight of Hand Cellars',lat:46.0222, lng: -118.3386 },
-  { name: 'Rasa Vineyards',        lat: 46.0215, lng: -118.3372 },
-  { name: 'Revelry Vintners',      lat: 46.0208, lng: -118.3358 },
-  { name: 'Reynvaan Family Vineyards', lat: 46.0201, lng: -118.3344 },
-  { name: 'Garrison Creek Cellars',lat: 46.0194, lng: -118.3330 },
-  { name: 'Gifford Hirlinger',     lat: 46.0187, lng: -118.3316 },
-  { name: 'Alton Wines',           lat: 46.0180, lng: -118.3302 },
-  { name: 'Caprio Cellars',        lat: 46.0313, lng: -118.3568 },
-  { name: 'Dillon Cellars',        lat: 46.0320, lng: -118.3582 },
-  { name: 'Everen Wines',          lat: 46.0173, lng: -118.3288 },
-  { name: 'Grosgrain Vineyards',   lat: 46.0166, lng: -118.3274 },
-  { name: 'Kinhaven Winery',       lat: 46.0159, lng: -118.3260 },
-  { name: 'Mackey Vineyards',      lat: 46.0152, lng: -118.3246 },
-  { name: 'Patterson Cellars',     lat: 46.0145, lng: -118.3232 },
-  { name: 'SuLei Cellars',         lat: 46.0138, lng: -118.3218 },
-  { name: 'Valdemar Estates',      lat: 46.0131, lng: -118.3204 },
-  { name: 'Yellowhawk Resort and Sparkling House', lat: 46.0124, lng: -118.3190 },
-  // Rocks District
-  { name: 'Rotie Cellars',    lat: 45.9387, lng: -118.3865 },
-  { name: 'Watermill Winery', lat: 45.9241, lng: -118.4102 },
-];
-
-const DISTRICT_COLORS_HEX = {
-  downtown:  '#6d2b35',
-  airport:   '#1a4a6e',
-  eastside:  '#2a5425',
-  westside:  '#7a4915',
-  southside: '#5a2e6a',
-  rocks:     '#2e5c4a',
-};
-
-let mapInstance = null;
-
-function initMap() {
-  if (mapInstance) return;
-  mapInstance = L.map('mapView', { zoomControl: true, scrollWheelZoom: true })
-    .setView([46.065, -118.340], 12);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors © <a href="https://carto.com/">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 19
-  }).addTo(mapInstance);
-  // place markers for every winery in our list
-  wineries.forEach(w => {
-    const loc = WINERY_LOCATIONS.find(l => l.name === w.name);
-    if (!loc) return;
-    const color  = DISTRICT_COLORS_HEX[w.district] || '#6d1535';
-    const fill   = w.visited ? color : '#fff';
-    const svg    = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="30" viewBox="0 0 22 30"><path d="M11 0C5 0 0 5 0 11c0 8 11 19 11 19s11-11 11-19C22 5 17 0 11 0z" fill="${fill}" stroke="${color}" stroke-width="2.5"/>${!w.visited?`<circle cx="11" cy="11" r="4" fill="${color}"/>`:`<text x="11" y="15" text-anchor="middle" font-size="9" fill="${w.visited?'#fff':color}">✓</text>`}</svg>`;
-    const icon   = L.divIcon({ html: svg, className: '', iconSize: [22, 30], iconAnchor: [11, 30], popupAnchor: [0, -30] });
-    const rating = w.rating ? ' &nbsp;' + '★'.repeat(w.rating) : '';
-    const status = w.visited ? '<span style="color:#2a5425">✓ Visited</span>' : 'Not yet visited';
-    L.marker([loc.lat, loc.lng], { icon })
-      .bindPopup(`<strong style="font-size:.92rem">${escHtml(w.name)}</strong><br><span style="font-size:.75rem;color:#888">${escHtml(DISTRICT_LABELS[w.district]||w.district)}</span><br><span style="font-size:.8rem">${status}${rating}</span>`)
-      .addTo(mapInstance);
-  });
+// Opens Google Maps searching for tasting rooms across the Walla Walla Valley.
+// Honors the active district filter so "Map" shows the district you're viewing.
+function openAreaMap() {
+  const districtQuery = {
+    downtown:  'downtown Walla Walla WA',
+    airport:   'Walla Walla Airport District wineries, Walla Walla WA',
+    eastside:  'east side Walla Walla WA wineries',
+    westside:  'west Walla Walla WA wineries',
+    southside: 'south Walla Walla WA wineries',
+    rocks:     'Rocks District Milton-Freewater OR wineries',
+  };
+  const area = districtQuery[currentFilter] || 'Walla Walla Valley WA';
+  const q = encodeURIComponent('wine tasting rooms ' + area);
+  window.open('https://www.google.com/maps/search/' + q, '_blank', 'noopener');
 }
 
-function toggleMapView() {
-  const mapDiv  = document.getElementById('mapView');
-  const content = document.getElementById('mainContent');
-  const btn     = document.getElementById('mapToggleBtn');
-  const showing = btn.classList.contains('active');
-  if (showing) {
-    mapDiv.classList.remove('map-active');
-    content.style.display = '';
-    btn.classList.remove('active');
-  } else {
-    content.style.display = 'none';
-    btn.classList.add('active');
-    mapDiv.classList.add('map-active');
-    if (!mapInstance) {
-      // first open — give the browser a full paint cycle to lay out the div
-      setTimeout(() => { initMap(); }, 150);
-    } else {
-      mapInstance.invalidateSize();
-    }
-  }
+// Opens a single winery's location in Google Maps by name (reliable — no stored coords).
+function openWineryMap(e, id) {
+  e.stopPropagation();
+  const w = wineries.find(x => x.id === id);
+  if (!w) return;
+  const q = encodeURIComponent(w.name + ' Walla Walla WA');
+  window.open('https://www.google.com/maps/search/' + q, '_blank', 'noopener');
 }
 
 function quickRate(e, id, val) {
