@@ -61,6 +61,8 @@
   .filter-btn { padding: 5px 13px; border: 1px solid var(--gray-3); border-radius: 20px; background: #fff; font-size: .8rem; cursor: pointer; transition: all .14s; font-family: inherit; }
   .filter-btn:hover { border-color: #9f2b55; }
   .filter-btn.active { background: #6d1535; border-color: #6d1535; color: #fff; }
+  .filter-btn[data-filter="top"] { border-color: var(--gold); color: var(--gold); }
+  .filter-btn[data-filter="top"].active { background: var(--gold); border-color: var(--gold); color: #fff; }
   /* inactive district buttons — colored outline + text */
   .filter-btn[data-filter="downtown"]  { border-color: #6d2b35; color: #6d2b35; }
   .filter-btn[data-filter="airport"]   { border-color: #1a4a6e; color: #1a4a6e; }
@@ -186,6 +188,10 @@
   .modal-footer { padding: 16px 24px; border-top: 1px solid var(--gray-2); display: flex; justify-content: flex-end; gap: 10px; }
   .btn-save { padding: 9px 24px; background: #6d1535; color: #fff; border: none; border-radius: 8px; font-size: .9rem; cursor: pointer; font-family: inherit; }
   .btn-save:hover { background: #4b0e24; }
+  .btn-save:disabled { background: var(--gray-3); cursor: not-allowed; opacity: .7; }
+  .btn-save:disabled:hover { background: var(--gray-3); }
+  .rating-hint { font-size: .78rem; color: #9f2b55; font-family: sans-serif; align-self: center; }
+  .rating-hint.hidden { display: none; }
   .btn-cancel { padding: 9px 20px; background: none; border: 1px solid var(--gray-3); border-radius: 8px; font-size: .9rem; cursor: pointer; font-family: inherit; }
   .btn-cancel:hover { background: var(--gray-1); }
   .btn-delete { margin-right: auto; padding: 9px 16px; background: none; border: 1px solid transparent; border-radius: 8px; font-size: .9rem; cursor: pointer; font-family: inherit; color: #c0392b; }
@@ -200,6 +206,14 @@
   .btn-danger { padding: 8px 22px; background: #c0392b; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; }
   .btn-danger:hover { background: #96281b; }
   .empty { text-align: center; padding: 50px; color: var(--gray-4); font-size: .95rem; }
+  .tr-varietal-list { display: flex; flex-direction: column; }
+  .tr-varietal-row { display: flex; align-items: center; gap: 12px; padding: 11px 20px; border-bottom: 1px solid var(--gray-2); cursor: pointer; background: #fff; transition: background .12s; }
+  .tr-varietal-row:last-child { border-bottom: none; }
+  .tr-varietal-row:hover { background: var(--d-tint); }
+  .tr-varietal-winery { flex: 1; font-size: .9rem; font-weight: 600; color: var(--gray-5, #4a4038); }
+  .tr-varietal-stars { white-space: nowrap; }
+  .tr-star { font-size: .95rem; color: var(--gray-3); }
+  .tr-star.lit { color: var(--gold); }
 
   @media (max-width: 600px) {
     .hero-content { padding: calc(18px + env(safe-area-inset-top, 0px)) calc(16px + env(safe-area-inset-right, 0px)) 16px calc(16px + env(safe-area-inset-left, 0px)); }
@@ -346,6 +360,7 @@
     <button class="filter-btn active" data-filter="all"       onclick="setFilter('all')">All</button>
     <button class="filter-btn"        data-filter="visited"   onclick="setFilter('visited')">Visited</button>
     <button class="filter-btn"        data-filter="unvisited" onclick="setFilter('unvisited')">To Go</button>
+    <button class="filter-btn"        data-filter="top"       onclick="setFilter('top')">★ Top Rated</button>
   </div>
   <div class="filter-group">
     <button class="filter-btn" data-filter="downtown"  onclick="setFilter('downtown')">Downtown</button>
@@ -458,8 +473,9 @@
     </div>
     <div class="modal-footer">
       <button class="btn-delete" id="deleteBtn" onclick="askDeleteWinery()">Delete</button>
+      <span id="ratingHint" class="rating-hint">★ Add a star rating to save</span>
       <button class="btn-cancel" onclick="closeModal()">Cancel</button>
-      <button class="btn-save"   onclick="saveModal()">Save</button>
+      <button class="btn-save" id="saveBtn" onclick="saveModal()">Save</button>
     </div>
   </div>
 </div>
@@ -813,6 +829,8 @@ function render() {
   const main  = document.getElementById('mainContent');
   renderStats();
 
+  if (currentFilter === 'top') { renderTopRated(query); return; }
+
   // base filter
   let filtered = wineries.filter(w => {
     if (query && !wineryMatchesQuery(w, query)) return false;
@@ -863,6 +881,67 @@ function wineryMatchesQuery(w, query) {
   if (w.varietals.some(v => v.toLowerCase().includes(query))) return true;
   if (w.notes && w.notes.toLowerCase().includes(query)) return true;
   return false;
+}
+
+// ── TOP RATED VIEW ─────────────────────────────────────────────────────────────
+// Shows an overall top-rated ranking plus the best-rated winery for each grape
+// varietal the user has recorded.
+function renderTopRated(query) {
+  const main = document.getElementById('mainContent');
+  const rated = wineries.filter(w => w.rating > 0 && (!query || wineryMatchesQuery(w, query)));
+
+  if (!rated.length) {
+    main.innerHTML = '<div class="empty">No rated wineries yet. Give a tasting room a star rating and it\'ll show up here.</div>';
+    return;
+  }
+
+  const byRatingThenName = (a, b) => (b.rating - a.rating) || sortKey(a.name).localeCompare(sortKey(b.name));
+
+  // Overall ranking (highest rated first).
+  const overall = [...rated].sort(byRatingThenName);
+  let html = `
+    <div class="district-section" data-district="downtown">
+      <div class="district-header-band" style="cursor:default;">
+        <span style="font-size:1rem;">🏆</span>
+        <h2>Your Top Rated</h2>
+        <span class="district-count">${overall.length} rated</span>
+      </div>
+      <div class="winery-grid">${overall.map(w => cardHTML(w, true)).join('')}</div>
+    </div>`;
+
+  // Best winery per varietal (only varietals attached to rated wineries).
+  const varietalBest = {};
+  rated.forEach(w => {
+    (w.varietals || []).forEach(v => {
+      if (!varietalBest[v] || w.rating > varietalBest[v].rating) varietalBest[v] = w;
+    });
+  });
+  const varietals = Object.keys(varietalBest).sort((a, b) =>
+    (varietalBest[b].rating - varietalBest[a].rating) || a.localeCompare(b));
+
+  if (varietals.length) {
+    const rows = varietals.map(v => {
+      const w = varietalBest[v];
+      const stars = [1,2,3,4,5].map(i => `<span class="tr-star ${i<=w.rating?'lit':''}">★</span>`).join('');
+      return `
+        <div class="tr-varietal-row" onclick="openModal('${w.id}')">
+          <span class="varietal-chip type-${varietalType(v)}">${escHtml(v)}</span>
+          <span class="tr-varietal-winery">${escHtml(w.name)}</span>
+          <span class="tr-varietal-stars">${stars}</span>
+        </div>`;
+    }).join('');
+    html += `
+      <div class="district-section" data-district="southside">
+        <div class="district-header-band" style="cursor:default;">
+          <span style="font-size:1rem;">🍇</span>
+          <h2>Best By Varietal</h2>
+          <span class="district-count">${varietals.length} varietals</span>
+        </div>
+        <div class="tr-varietal-list">${rows}</div>
+      </div>`;
+  }
+
+  main.innerHTML = html;
 }
 
 // ── CARD HTML ─────────────────────────────────────────────────────────────────
@@ -1264,6 +1343,7 @@ function quickRate(e, id, val) {
   const w = wineries.find(x => x.id === id);
   if (!w) return;
   w.rating = (w.rating === val) ? 0 : val;
+  if (w.rating > 0) w.visited = true;
   saveData(); render();
 }
 
@@ -1298,6 +1378,7 @@ function openModal(id) {
   updateVisitedUI();
   renderStarPicker();
   renderVarietalPicker();
+  updateSaveState();
   document.getElementById('modalOverlay').classList.add('open');
 }
 
@@ -1311,9 +1392,26 @@ function updateVisitedUI() {
   document.getElementById('visitedSwitch').classList.toggle('on', modalVisited);
   document.getElementById('visitedLabel').textContent = modalVisited ? 'Visited ✓' : 'Not yet visited';
 }
-function setRating(val) { modalRating = (modalRating===val)?0:val; renderStarPicker(); }
+function setRating(val) {
+  modalRating = (modalRating === val) ? 0 : val;
+  // Rating a winery means you've been there — auto-mark it visited.
+  if (modalRating > 0) modalVisited = true;
+  renderStarPicker();
+  updateVisitedUI();
+  updateSaveState();
+}
 function renderStarPicker() {
   document.querySelectorAll('#starPicker .star').forEach((s, i) => s.classList.toggle('lit', i < modalRating));
+}
+// When reviewing an existing winery, save is only allowed once a star rating
+// exists (so picking varietals alone can't complete a review). Adding a brand-new
+// custom winery doesn't require a rating.
+function updateSaveState() {
+  const canSave = !editingId || modalRating > 0;
+  const btn  = document.getElementById('saveBtn');
+  const hint = document.getElementById('ratingHint');
+  if (btn)  btn.disabled = !canSave;
+  if (hint) hint.classList.toggle('hidden', canSave);
 }
 
 function renderVarietalPicker() {
@@ -1341,6 +1439,8 @@ function saveModal() {
   const name     = document.getElementById('fieldName').value.trim();
   const district = document.getElementById('fieldDistrict').value;
   if (!editingId && !name) { document.getElementById('fieldName').focus(); return; }
+  // Reviewing an existing winery requires a star rating before saving.
+  if (editingId && modalRating < 1) return;
 
   if (editingId) {
     const w = wineries.find(x => x.id === editingId);
@@ -1354,7 +1454,9 @@ function saveModal() {
     w.dateVisited = document.getElementById('fieldDate').value;
   } else {
     wineries.push({ id:'w_'+Math.random().toString(36).slice(2), name, district,
-      visited:false, dateVisited:'', rating:0, varietals:[], notes:'' });
+      visited: modalVisited, dateVisited: document.getElementById('fieldDate').value,
+      rating: modalRating, varietals: [...modalVarietals],
+      notes: document.getElementById('fieldNotes').value.trim() });
   }
   saveData(); closeModal(); render();
 }
