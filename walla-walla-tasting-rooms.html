@@ -862,7 +862,8 @@ function render() {
     const visitedD = allD.filter(w => w.visited).length;
     const pct      = allD.length ? Math.round(visitedD / allD.length * 100) : 0;
 
-    const collapsed = collapsedDistricts.has(d) ? ' collapsed' : '';
+    // While searching, always expand matching districts so results are visible.
+    const collapsed = (!query && collapsedDistricts.has(d)) ? ' collapsed' : '';
     html += `
       <div class="district-section${collapsed}" data-district="${d}">
         <div class="district-header-band" onclick="toggleDistrict('${d}')">
