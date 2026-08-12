@@ -214,7 +214,15 @@
   .tr-varietal-row:hover { background: var(--d-tint); }
   .tr-varietal-winery { flex: 1; font-size: .9rem; font-weight: 600; color: var(--gray-5, #4a4038); }
   .tr-varietal-stars { white-space: nowrap; }
-  .tr-varietal-count { white-space: nowrap; font-size: .74rem; color: var(--gray-4); font-family: sans-serif; }
+  .tr-varietal-count { white-space: nowrap; font-size: .74rem; color: var(--gray-4); font-family: sans-serif; margin-left: auto; }
+  .tr-varietal-count.muted { color: var(--gray-3); font-style: italic; }
+  .tr-groups { padding: 6px 0 2px; }
+  .tr-group-label { font-size: .7rem; font-family: sans-serif; font-weight: bold; letter-spacing: .1em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; margin: 12px 20px 6px; display: inline-block; }
+  .tr-group-label.sparkling { background: #ddeaf5; color: #0f2f4a; }
+  .tr-group-label.white     { background: #f7f0d4; color: #5c4408; }
+  .tr-group-label.rose      { background: #fce8ef; color: #7a2040; }
+  .tr-group-label.red       { background: #f5e4e6; color: #5a1520; }
+  .tr-group-label.blend     { background: #ece7f0; color: #3f2a52; }
   .tr-back-bar { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 16px; padding: 7px 14px; background: #fff; border: 1px solid var(--gray-3); border-radius: 20px; font-size: .82rem; color: var(--gray-4); cursor: pointer; font-family: sans-serif; transition: all .14s; }
   .tr-back-bar:hover { border-color: var(--gold); color: var(--gold); }
   .tr-back-arrow { font-size: 1rem; }
@@ -918,7 +926,7 @@ function renderTopRated(query) {
 }
 
 // ── VARIETALS VIEW ─────────────────────────────────────────────────────────────
-// Pick a grape varietal and see every rated tasting room that poured it.
+// Lists every grape varietal; clicking one shows the stack-ranked rated places.
 function renderVarietals(query) {
   const main = document.getElementById('mainContent');
   const rated = wineries.filter(w => w.rating > 0);
@@ -928,64 +936,63 @@ function renderVarietals(query) {
   if (topVarietalDrill) {
     const v = topVarietalDrill;
     const matches = rated.filter(w => (w.varietals || []).includes(v)).sort(byRatingThenName);
-    if (matches.length) {
-      main.innerHTML = `
-        <div class="tr-back-bar" onclick="clearVarietalDrill()">
-          <span class="tr-back-arrow">←</span> All varietals
+    const body = matches.length
+      ? `<div class="winery-grid">${matches.map(w => cardHTML(w, true, false)).join('')}</div>`
+      : '<div class="empty">No rated tasting rooms for this varietal yet.</div>';
+    main.innerHTML = `
+      <div class="tr-back-bar" onclick="clearVarietalDrill()">
+        <span class="tr-back-arrow">←</span> All varietals
+      </div>
+      <div class="district-section" data-district="southside">
+        <div class="district-header-band" style="cursor:default;">
+          <span style="font-size:1rem;">🍇</span>
+          <h2>${escHtml(v)}</h2>
+          <span class="district-count">${matches.length} rated place${matches.length===1?'':'s'}</span>
         </div>
-        <div class="district-section" data-district="southside">
-          <div class="district-header-band" style="cursor:default;">
-            <span style="font-size:1rem;">🍇</span>
-            <h2>${escHtml(v)}</h2>
-            <span class="district-count">${matches.length} rated place${matches.length===1?'':'s'}</span>
-          </div>
-          <div class="winery-grid">${matches.map(w => cardHTML(w, true, false)).join('')}</div>
-        </div>`;
-      return;
-    }
-    topVarietalDrill = null;   // stale selection — fall through to the list
-  }
-
-  // ── Varietal list: every varietal attached to a rated winery ──────────────────
-  const varietalBest = {};
-  const varietalCount = {};
-  rated.forEach(w => {
-    (w.varietals || []).forEach(v => {
-      varietalCount[v] = (varietalCount[v] || 0) + 1;
-      if (!varietalBest[v] || w.rating > varietalBest[v].rating) varietalBest[v] = w;
-    });
-  });
-  let varietals = Object.keys(varietalBest);
-  if (query) varietals = varietals.filter(v => v.toLowerCase().includes(query));
-  varietals.sort((a, b) => (varietalBest[b].rating - varietalBest[a].rating) || a.localeCompare(b));
-
-  if (!varietals.length) {
-    main.innerHTML = query
-      ? '<div class="empty">No rated varietals match your search.</div>'
-      : '<div class="empty">No varietals yet. Rate a winery and note the grapes you tried to see them here.</div>';
+        ${body}
+      </div>`;
     return;
   }
 
-  const rows = varietals.map(v => {
-    const w = varietalBest[v];
-    const n = varietalCount[v];
-    const stars = [1,2,3,4,5].map(i => `<span class="tr-star ${i<=w.rating?'lit':''}">★</span>`).join('');
+  // ── Varietal list: every varietal in the taxonomy, grouped by type ────────────
+  const varietalCount = {};
+  rated.forEach(w => (w.varietals || []).forEach(v => {
+    varietalCount[v] = (varietalCount[v] || 0) + 1;
+  }));
+
+  const q = (query || '').trim();
+  const sections = VARIETAL_GROUPS.map(g => {
+    const items = q ? g.items.filter(v => v.toLowerCase().includes(q)) : g.items;
+    if (!items.length) return '';
+    const rows = items.map(v => {
+      const n = varietalCount[v] || 0;
+      const count = n
+        ? `<span class="tr-varietal-count">${n} rated place${n===1?'':'s'} ›</span>`
+        : `<span class="tr-varietal-count muted">none rated yet ›</span>`;
+      return `
+        <div class="tr-varietal-row" onclick="showVarietalDrill('${v.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">
+          <span class="varietal-chip type-${g.type}">${escHtml(v)}</span>
+          ${count}
+        </div>`;
+    }).join('');
     return `
-      <div class="tr-varietal-row" onclick="showVarietalDrill('${v.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">
-        <span class="varietal-chip type-${varietalType(v)}">${escHtml(v)}</span>
-        <span class="tr-varietal-winery">${escHtml(w.name)}</span>
-        <span class="tr-varietal-stars">${stars}</span>
-        <span class="tr-varietal-count">${n} place${n===1?'':'s'} ›</span>
-      </div>`;
+      <div class="tr-group-label ${g.type}">${g.label}</div>
+      <div class="tr-varietal-list">${rows}</div>`;
   }).join('');
+
+  if (!sections) {
+    main.innerHTML = '<div class="empty">No varietals match your search.</div>';
+    return;
+  }
+
   main.innerHTML = `
     <div class="district-section" data-district="southside">
       <div class="district-header-band" style="cursor:default;">
         <span style="font-size:1rem;">🍇</span>
         <h2>By Varietal</h2>
-        <span class="district-count">${varietals.length} varietals</span>
+        <span class="district-count">Tap a grape to rank your places</span>
       </div>
-      <div class="tr-varietal-list">${rows}</div>
+      <div class="tr-groups">${sections}</div>
     </div>`;
 }
 
