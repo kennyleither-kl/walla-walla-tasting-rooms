@@ -674,7 +674,8 @@ function loadUiState() {
     const r = localStorage.getItem(UI_STATE_KEY);
     if (r) { const s = JSON.parse(r); if (Array.isArray(s.collapsed)) return new Set(s.collapsed); }
   } catch(e) {}
-  return new Set();
+  // First load (no saved state): start every section collapsed.
+  return new Set(Object.keys(DISTRICT_LABELS));
 }
 function saveUiState() {
   localStorage.setItem(UI_STATE_KEY, JSON.stringify({ collapsed: [...collapsedDistricts] }));
