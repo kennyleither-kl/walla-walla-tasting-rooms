@@ -216,8 +216,15 @@
   .tr-varietal-stars { white-space: nowrap; }
   .tr-varietal-count { white-space: nowrap; font-size: .74rem; color: var(--gray-4); font-family: sans-serif; margin-left: auto; }
   .tr-varietal-count.muted { color: var(--gray-3); font-style: italic; }
-  .tr-groups { padding: 6px 0 2px; }
-  .tr-group-label { font-size: .7rem; font-family: sans-serif; font-weight: bold; letter-spacing: .1em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; margin: 12px 20px 6px; display: inline-block; }
+  .tr-groups { padding: 4px 0 2px; }
+  .tr-group-header { display: flex; align-items: center; gap: 9px; padding: 11px 20px; cursor: pointer; user-select: none; border-bottom: 1px solid var(--gray-2); transition: background .12s; }
+  .tr-group-header:hover { background: var(--d-tint); }
+  .tr-group-chevron { font-size: .8rem; color: var(--gray-4); transition: transform .15s; }
+  .tr-group.open .tr-group-chevron { transform: rotate(90deg); }
+  .tr-group-meta { margin-left: auto; font-size: .74rem; color: var(--gray-4); font-family: sans-serif; }
+  .tr-group .tr-varietal-list { display: none; }
+  .tr-group.open .tr-varietal-list { display: flex; }
+  .tr-group-label { font-size: .7rem; font-family: sans-serif; font-weight: bold; letter-spacing: .1em; text-transform: uppercase; padding: 3px 8px; border-radius: 4px; display: inline-block; }
   .tr-group-label.sparkling { background: #ddeaf5; color: #0f2f4a; }
   .tr-group-label.white     { background: #f7f0d4; color: #5c4408; }
   .tr-group-label.rose      { background: #fce8ef; color: #7a2040; }
@@ -795,6 +802,7 @@ let wineries = loadData();
 })();
 let currentFilter         = 'all';
 let topVarietalDrill      = null;   // when set, Top Rated shows all rated places for this varietal
+let expandedVarietalGroups = new Set();   // which varietal type-groups are expanded (start all collapsed)
 let collapsedDistricts    = loadUiState();
 let editingId        = null;
 let planList        = [];
@@ -964,6 +972,9 @@ function renderVarietals(query) {
   const sections = VARIETAL_GROUPS.map(g => {
     const items = q ? g.items.filter(v => v.toLowerCase().includes(q)) : g.items;
     if (!items.length) return '';
+    // While searching, force groups with matches open; otherwise honor toggle state.
+    const open = q ? true : expandedVarietalGroups.has(g.type);
+    const ratedInGroup = g.items.reduce((sum, v) => sum + (varietalCount[v] || 0), 0);
     const rows = items.map(v => {
       const n = varietalCount[v] || 0;
       const count = n
@@ -976,8 +987,14 @@ function renderVarietals(query) {
         </div>`;
     }).join('');
     return `
-      <div class="tr-group-label ${g.type}">${g.label}</div>
-      <div class="tr-varietal-list">${rows}</div>`;
+      <div class="tr-group ${open?'open':''}">
+        <div class="tr-group-header" onclick="toggleVarietalGroup('${g.type}')">
+          <span class="tr-group-chevron">▸</span>
+          <span class="tr-group-label ${g.type}">${g.label}</span>
+          <span class="tr-group-meta">${items.length} varietal${items.length===1?'':'s'}${ratedInGroup?` · ${ratedInGroup} rated`:''}</span>
+        </div>
+        <div class="tr-varietal-list">${rows}</div>
+      </div>`;
   }).join('');
 
   if (!sections) {
@@ -1003,6 +1020,11 @@ function showVarietalDrill(v) {
 }
 function clearVarietalDrill() {
   topVarietalDrill = null;
+  render();
+}
+function toggleVarietalGroup(type) {
+  if (expandedVarietalGroups.has(type)) expandedVarietalGroups.delete(type);
+  else expandedVarietalGroups.add(type);
   render();
 }
 
