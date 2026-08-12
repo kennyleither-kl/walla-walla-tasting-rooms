@@ -111,7 +111,7 @@
   .winery-card.visited .card-name { color: var(--d-dark); }
   .winery-card.unvisited-varietal { opacity: .65; }
 
-  .card-top { display: flex; align-items: flex-start; gap: 9px; }
+  .card-top { display: flex; align-items: flex-start; gap: 9px; flex-wrap: wrap; }
   .card-checkbox { width: 20px; height: 20px; min-width: 20px; border: 2px solid var(--gray-3); border-radius: 50%; margin-top: 2px; display: flex; align-items: center; justify-content: center; transition: all .15s; }
   .card-checkbox.checked { background: var(--d-color); border-color: var(--d-color); }
   .card-checkbox.checked::after { content: '✓'; color: #fff; font-size: .72rem; font-weight: bold; }
@@ -906,7 +906,7 @@ function renderTopRated(query) {
         <h2>Your Top Rated</h2>
         <span class="district-count">${overall.length} rated</span>
       </div>
-      <div class="winery-grid">${overall.map(w => cardHTML(w, true)).join('')}</div>
+      <div class="winery-grid">${overall.map(w => cardHTML(w, true, false)).join('')}</div>
     </div>`;
 
   // Best winery per varietal (only varietals attached to rated wineries).
@@ -951,7 +951,7 @@ function chipHTML(v, highlight) {
   return `<span class="varietal-chip type-${t}${highlight?' highlight':''}">${escHtml(v)}</span>`;
 }
 
-function cardHTML(w, showDistrict) {
+function cardHTML(w, showDistrict, showPlan = true) {
   const stars = [1,2,3,4,5].map(i =>
     `<span class="star ${i<=w.rating?'lit':''}" onclick="quickRate(event,'${w.id}',${i})">★</span>`
   ).join('');
@@ -959,7 +959,9 @@ function cardHTML(w, showDistrict) {
   const badge = showDistrict
     ? `<span class="card-district-badge">${DISTRICT_LABELS[w.district]}</span>` : '';
   const inPlan  = planList.includes(w.id);
-  const planBtn = `<button class="card-plan-btn ${inPlan?'in-plan':''}" title="${inPlan?'Remove from trip plan':'Add to trip plan'}" onclick="togglePlan(event,'${w.id}')">${inPlan?'✓ Planned':'+ Plan'}</button>`;
+  const planBtn = showPlan
+    ? `<button class="card-plan-btn ${inPlan?'in-plan':''}" title="${inPlan?'Remove from trip plan':'Add to trip plan'}" onclick="togglePlan(event,'${w.id}')">${inPlan?'✓ Planned':'+ Plan'}</button>`
+    : '';
 
   return `
     <div class="winery-card ${w.visited?'visited':''}" onclick="openModal('${w.id}')">
