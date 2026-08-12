@@ -536,7 +536,8 @@ const DISTRICT_COLORS = {
 };
 
 const SEED_WINERIES = [
-  // Downtown (31)
+  // Downtown (36)
+  { name: 'Bartholomew Winery',              district: 'downtown' },
   { name: 'Beekeeper by Abeja',              district: 'downtown' },
   { name: 'Bledsoe Family Winery',           district: 'downtown' },
   { name: 'Bontzu Cellars',                  district: 'downtown' },
@@ -565,10 +566,14 @@ const SEED_WINERIES = [
   { name: 'Seven Hills Winery',              district: 'downtown' },
   { name: 'Spring Valley Vineyard',          district: 'downtown' },
   { name: 'Time & Direction',                district: 'downtown' },
-  { name: 'TruthTeller Winery',              district: 'downtown' },
   { name: 'Turtle Wines',                    district: 'downtown' },
   { name: 'Vital Wines',                     district: 'downtown' },
-  // Airport (12)
+  { name: 'Moonbase Cellars',                district: 'downtown' },
+  { name: 'Dossier Wine Collective',         district: 'downtown' },
+  { name: 'Proper Wines & House of Bones',   district: 'downtown' },
+  { name: 'Côtes de Ciel',                   district: 'downtown' },
+  { name: 'Nine Hats Wines',                 district: 'downtown' },
+  // Airport (13)
   { name: 'Adamant Cellars',   district: 'airport' },
   { name: 'Arenness Cellars',  district: 'airport' },
   { name: 'CAVU Cellars',      district: 'airport' },
@@ -581,10 +586,10 @@ const SEED_WINERIES = [
   { name: 'SYZYGY Winery',     district: 'airport' },
   { name: 'Tamarack Cellars',  district: 'airport' },
   { name: 'Tempus Cellars',    district: 'airport' },
+  { name: 'August Forest',     district: 'airport' },
   // Eastside (10)
   { name: 'Abeja Winery',         district: 'eastside' },
   { name: 'ALUVÉ',                district: 'eastside' },
-  { name: 'aMaurice Cellars',     district: 'eastside' },
   { name: 'College Cellars',      district: 'eastside' },
   { name: 'Echolands Winery',     district: 'eastside' },
   { name: 'FIGGINS',              district: 'eastside' },
@@ -592,7 +597,8 @@ const SEED_WINERIES = [
   { name: 'Leonetti Cellar',      district: 'eastside' },
   { name: 'Tranche',              district: 'eastside' },
   { name: 'Walla Walla Vintners', district: 'eastside' },
-  // Westside (16)
+  { name: 'Jett Wines',           district: 'eastside' },
+  // Westside (15)
   { name: 'Armstrong Family Winery',              district: 'westside' },
   { name: 'Canoe Ridge Vineyard',                 district: 'westside' },
   { name: 'Cougar Crest Winery',                  district: 'westside' },
@@ -604,17 +610,15 @@ const SEED_WINERIES = [
   { name: 'Morell Family Wines and Studio Twozerotwo', district: 'westside' },
   { name: 'REALI Family Winery',                  district: 'westside' },
   { name: 'Reininger Winery',                     district: 'westside' },
-  { name: 'Smoky Rose Cellars',                   district: 'westside' },
   { name: 'The Walls Vineyards and PÁŠXA Wines',  district: 'westside' },
-  { name: 'Three Rivers Winery',                  district: 'westside' },
   { name: 'Waterbrook Winery',                    district: 'westside' },
   { name: 'Woodward Canyon',                      district: 'westside' },
-  // Southside (28)
+  { name: 'Bledsoe | McDaniels',                  district: 'westside' },
+  // Southside (29)
   { name: 'Alton Wines',           district: 'southside' },
   { name: 'Amavi Cellars',         district: 'southside' },
   { name: 'Balboa Winery',         district: 'southside' },
   { name: 'Brook and Bull Cellars',district: 'southside' },
-  { name: 'Canvasback',            district: 'southside' },
   { name: 'Caprio Cellars',        district: 'southside' },
   { name: 'Dillon Cellars',        district: 'southside' },
   { name: 'Doubleback',            district: 'southside' },
@@ -625,8 +629,6 @@ const SEED_WINERIES = [
   { name: 'Grosgrain Vineyards',   district: 'southside' },
   { name: 'Isenhower Cellars',     district: 'southside' },
   { name: 'Kinhaven Winery',       district: 'southside' },
-  { name: 'Mackey Vineyards',      district: 'southside' },
-  { name: 'Northstar Winery',      district: 'southside' },
   { name: 'Patterson Cellars',     district: 'southside' },
   { name: 'Pepper Bridge Winery',  district: 'southside' },
   { name: 'Rasa Vineyards',        district: 'southside' },
@@ -638,9 +640,20 @@ const SEED_WINERIES = [
   { name: 'Va Piano Vineyards',    district: 'southside' },
   { name: 'Valdemar Estates',      district: 'southside' },
   { name: 'Yellowhawk Resort and Sparkling House', district: 'southside' },
-  // Rocks District / Milton-Freewater, OR (2)
+  { name: 'Second Pour',           district: 'southside' },
+  { name: 'Deux Soldats Estate',   district: 'southside' },
+  { name: 'Floating Balance Cellars', district: 'southside' },
+  { name: 'Sagemoor',              district: 'southside' },
+  // Rocks District / Milton-Freewater, OR (9)
   { name: 'Rotie Cellars',    district: 'rocks' },
   { name: 'Watermill Winery', district: 'rocks' },
+  { name: 'Delmas',                 district: 'rocks' },
+  { name: 'Ducleaux Cellars',       district: 'rocks' },
+  { name: 'Eternal Wines',          district: 'rocks' },
+  { name: 'Los Rocosos Vineyards',  district: 'rocks' },
+  { name: 'Mongata Estate Winery',  district: 'rocks' },
+  { name: 'Force Majeure Vineyards',district: 'rocks' },
+  { name: 'R|A Family Wines',       district: 'rocks' },
 ];
 
 const STORAGE_KEY  = 'ww_tasting_rooms_v1';
@@ -678,6 +691,72 @@ let wineries = loadData();
       wineries.push({
         id: 'rocks_' + i + '_' + Math.random().toString(36).slice(2),
         name, district: 'rocks',
+        visited: false, dateVisited: '', rating: 0, varietals: [], notes: '',
+      });
+      changed = true;
+    }
+  });
+  if (changed) saveData();
+})();
+
+// ── MIGRATION: remove permanently-closed tasting rooms (verified Aug 2026) ────
+(function migrateRemoveClosed() {
+  const closedNames = [
+    'TruthTeller Winery', 'Three Rivers Winery', 'Northstar Winery',
+    'Smoky Rose Cellars', 'Canvasback', 'aMaurice Cellars', 'Mackey Vineyards',
+  ];
+  const removedIds = wineries.filter(w => closedNames.includes(w.name)).map(w => w.id);
+  if (!removedIds.length) return;
+  wineries = wineries.filter(w => !closedNames.includes(w.name));
+  saveData();
+  // scrub any of these from a saved trip plan before it loads
+  try {
+    const r = localStorage.getItem(PLAN_KEY);
+    if (r) {
+      const kept = JSON.parse(r).filter(id => !removedIds.includes(id));
+      localStorage.setItem(PLAN_KEY, JSON.stringify(kept));
+    }
+    const META_KEY = 'ww_plan_meta_v1';
+    const m = localStorage.getItem(META_KEY);
+    if (m) {
+      const meta = JSON.parse(m);
+      if (Array.isArray(meta.done)) meta.done = meta.done.filter(id => !removedIds.includes(id));
+      if (meta.notes) removedIds.forEach(id => { delete meta.notes[id]; });
+      localStorage.setItem(META_KEY, JSON.stringify(meta));
+    }
+  } catch (e) {}
+})();
+
+// ── MIGRATION: add newly-verified tasting rooms (Aug 2026) ────────────────────
+(function migrateAddMissing() {
+  const additions = [
+    { name: 'Bartholomew Winery',            district: 'downtown' },
+    { name: 'Moonbase Cellars',              district: 'downtown' },
+    { name: 'Dossier Wine Collective',       district: 'downtown' },
+    { name: 'Proper Wines & House of Bones', district: 'downtown' },
+    { name: 'Côtes de Ciel',                 district: 'downtown' },
+    { name: 'Nine Hats Wines',               district: 'downtown' },
+    { name: 'August Forest',                 district: 'airport' },
+    { name: 'Jett Wines',                    district: 'eastside' },
+    { name: 'Bledsoe | McDaniels',           district: 'westside' },
+    { name: 'Second Pour',                   district: 'southside' },
+    { name: 'Deux Soldats Estate',           district: 'southside' },
+    { name: 'Floating Balance Cellars',      district: 'southside' },
+    { name: 'Sagemoor',                      district: 'southside' },
+    { name: 'Delmas',                        district: 'rocks' },
+    { name: 'Ducleaux Cellars',              district: 'rocks' },
+    { name: 'Eternal Wines',                 district: 'rocks' },
+    { name: 'Los Rocosos Vineyards',         district: 'rocks' },
+    { name: 'Mongata Estate Winery',         district: 'rocks' },
+    { name: 'Force Majeure Vineyards',       district: 'rocks' },
+    { name: 'R|A Family Wines',              district: 'rocks' },
+  ];
+  let changed = false;
+  additions.forEach((a, i) => {
+    if (!wineries.find(w => w.name === a.name)) {
+      wineries.push({
+        id: 'add_' + i + '_' + Math.random().toString(36).slice(2),
+        name: a.name, district: a.district,
         visited: false, dateVisited: '', rating: 0, varietals: [], notes: '',
       });
       changed = true;
