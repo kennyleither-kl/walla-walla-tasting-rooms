@@ -63,6 +63,8 @@
   .filter-btn.active { background: #6d1535; border-color: #6d1535; color: #fff; }
   .filter-btn[data-filter="top"] { border-color: var(--gold); color: var(--gold); }
   .filter-btn[data-filter="top"].active { background: var(--gold); border-color: var(--gold); color: #fff; }
+  .filter-btn[data-filter="varietals"] { border-color: #5a2e6a; color: #5a2e6a; }
+  .filter-btn[data-filter="varietals"].active { background: #5a2e6a; border-color: #5a2e6a; color: #fff; }
   /* inactive district buttons — colored outline + text */
   .filter-btn[data-filter="downtown"]  { border-color: #6d2b35; color: #6d2b35; }
   .filter-btn[data-filter="airport"]   { border-color: #1a4a6e; color: #1a4a6e; }
@@ -365,6 +367,7 @@
     <button class="filter-btn"        data-filter="visited"   onclick="setFilter('visited')">Visited</button>
     <button class="filter-btn"        data-filter="unvisited" onclick="setFilter('unvisited')">To Go</button>
     <button class="filter-btn"        data-filter="top"       onclick="setFilter('top')">★ Top Rated</button>
+    <button class="filter-btn"        data-filter="varietals" onclick="setFilter('varietals')">🍇 Varietals</button>
   </div>
   <div class="filter-group">
     <button class="filter-btn" data-filter="downtown"  onclick="setFilter('downtown')">Downtown</button>
@@ -834,7 +837,8 @@ function render() {
   const main  = document.getElementById('mainContent');
   renderStats();
 
-  if (currentFilter === 'top') { renderTopRated(query); return; }
+  if (currentFilter === 'top')       { renderTopRated(query); return; }
+  if (currentFilter === 'varietals') { renderVarietals(query); return; }
 
   // base filter
   let filtered = wineries.filter(w => {
@@ -890,8 +894,7 @@ function wineryMatchesQuery(w, query) {
 }
 
 // ── TOP RATED VIEW ─────────────────────────────────────────────────────────────
-// Shows an overall top-rated ranking plus the best-rated winery for each grape
-// varietal the user has recorded.
+// Overall ranking of every winery the user has rated, highest first.
 function renderTopRated(query) {
   const main = document.getElementById('mainContent');
   const rated = wineries.filter(w => w.rating > 0 && (!query || wineryMatchesQuery(w, query)));
@@ -902,34 +905,8 @@ function renderTopRated(query) {
   }
 
   const byRatingThenName = (a, b) => (b.rating - a.rating) || sortKey(a.name).localeCompare(sortKey(b.name));
-
-  // ── Drill-down: all rated places that poured a specific varietal ──────────────
-  if (topVarietalDrill) {
-    const v = topVarietalDrill;
-    const matches = rated
-      .filter(w => (w.varietals || []).includes(v))
-      .sort(byRatingThenName);
-    if (!matches.length) { topVarietalDrill = null; }   // fall through to full view
-    else {
-      main.innerHTML = `
-        <div class="tr-back-bar" onclick="clearVarietalDrill()">
-          <span class="tr-back-arrow">←</span> Back to Top Rated
-        </div>
-        <div class="district-section" data-district="southside">
-          <div class="district-header-band" style="cursor:default;">
-            <span style="font-size:1rem;">🍇</span>
-            <h2>Top Rated · ${escHtml(v)}</h2>
-            <span class="district-count">${matches.length} place${matches.length===1?'':'s'}</span>
-          </div>
-          <div class="winery-grid">${matches.map(w => cardHTML(w, true, false)).join('')}</div>
-        </div>`;
-      return;
-    }
-  }
-
-  // Overall ranking (highest rated first).
   const overall = [...rated].sort(byRatingThenName);
-  let html = `
+  main.innerHTML = `
     <div class="district-section" data-district="downtown">
       <div class="district-header-band" style="cursor:default;">
         <span style="font-size:1rem;">🏆</span>
@@ -938,8 +915,38 @@ function renderTopRated(query) {
       </div>
       <div class="winery-grid">${overall.map(w => cardHTML(w, true, false)).join('')}</div>
     </div>`;
+}
 
-  // Best winery per varietal, plus how many rated places poured each varietal.
+// ── VARIETALS VIEW ─────────────────────────────────────────────────────────────
+// Pick a grape varietal and see every rated tasting room that poured it.
+function renderVarietals(query) {
+  const main = document.getElementById('mainContent');
+  const rated = wineries.filter(w => w.rating > 0);
+  const byRatingThenName = (a, b) => (b.rating - a.rating) || sortKey(a.name).localeCompare(sortKey(b.name));
+
+  // ── Drill-down: all rated places that poured the selected varietal ────────────
+  if (topVarietalDrill) {
+    const v = topVarietalDrill;
+    const matches = rated.filter(w => (w.varietals || []).includes(v)).sort(byRatingThenName);
+    if (matches.length) {
+      main.innerHTML = `
+        <div class="tr-back-bar" onclick="clearVarietalDrill()">
+          <span class="tr-back-arrow">←</span> All varietals
+        </div>
+        <div class="district-section" data-district="southside">
+          <div class="district-header-band" style="cursor:default;">
+            <span style="font-size:1rem;">🍇</span>
+            <h2>${escHtml(v)}</h2>
+            <span class="district-count">${matches.length} rated place${matches.length===1?'':'s'}</span>
+          </div>
+          <div class="winery-grid">${matches.map(w => cardHTML(w, true, false)).join('')}</div>
+        </div>`;
+      return;
+    }
+    topVarietalDrill = null;   // stale selection — fall through to the list
+  }
+
+  // ── Varietal list: every varietal attached to a rated winery ──────────────────
   const varietalBest = {};
   const varietalCount = {};
   rated.forEach(w => {
@@ -948,34 +955,38 @@ function renderTopRated(query) {
       if (!varietalBest[v] || w.rating > varietalBest[v].rating) varietalBest[v] = w;
     });
   });
-  const varietals = Object.keys(varietalBest).sort((a, b) =>
-    (varietalBest[b].rating - varietalBest[a].rating) || a.localeCompare(b));
+  let varietals = Object.keys(varietalBest);
+  if (query) varietals = varietals.filter(v => v.toLowerCase().includes(query));
+  varietals.sort((a, b) => (varietalBest[b].rating - varietalBest[a].rating) || a.localeCompare(b));
 
-  if (varietals.length) {
-    const rows = varietals.map(v => {
-      const w = varietalBest[v];
-      const n = varietalCount[v];
-      const stars = [1,2,3,4,5].map(i => `<span class="tr-star ${i<=w.rating?'lit':''}">★</span>`).join('');
-      return `
-        <div class="tr-varietal-row" onclick="showVarietalDrill('${v.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">
-          <span class="varietal-chip type-${varietalType(v)}">${escHtml(v)}</span>
-          <span class="tr-varietal-winery">${escHtml(w.name)}</span>
-          <span class="tr-varietal-stars">${stars}</span>
-          <span class="tr-varietal-count">${n} place${n===1?'':'s'} ›</span>
-        </div>`;
-    }).join('');
-    html += `
-      <div class="district-section" data-district="southside">
-        <div class="district-header-band" style="cursor:default;">
-          <span style="font-size:1rem;">🍇</span>
-          <h2>Best By Varietal</h2>
-          <span class="district-count">${varietals.length} varietals</span>
-        </div>
-        <div class="tr-varietal-list">${rows}</div>
-      </div>`;
+  if (!varietals.length) {
+    main.innerHTML = query
+      ? '<div class="empty">No rated varietals match your search.</div>'
+      : '<div class="empty">No varietals yet. Rate a winery and note the grapes you tried to see them here.</div>';
+    return;
   }
 
-  main.innerHTML = html;
+  const rows = varietals.map(v => {
+    const w = varietalBest[v];
+    const n = varietalCount[v];
+    const stars = [1,2,3,4,5].map(i => `<span class="tr-star ${i<=w.rating?'lit':''}">★</span>`).join('');
+    return `
+      <div class="tr-varietal-row" onclick="showVarietalDrill('${v.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">
+        <span class="varietal-chip type-${varietalType(v)}">${escHtml(v)}</span>
+        <span class="tr-varietal-winery">${escHtml(w.name)}</span>
+        <span class="tr-varietal-stars">${stars}</span>
+        <span class="tr-varietal-count">${n} place${n===1?'':'s'} ›</span>
+      </div>`;
+  }).join('');
+  main.innerHTML = `
+    <div class="district-section" data-district="southside">
+      <div class="district-header-band" style="cursor:default;">
+        <span style="font-size:1rem;">🍇</span>
+        <h2>By Varietal</h2>
+        <span class="district-count">${varietals.length} varietals</span>
+      </div>
+      <div class="tr-varietal-list">${rows}</div>
+    </div>`;
 }
 
 function showVarietalDrill(v) {
