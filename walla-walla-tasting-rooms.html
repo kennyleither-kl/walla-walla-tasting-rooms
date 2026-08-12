@@ -212,6 +212,10 @@
   .tr-varietal-row:hover { background: var(--d-tint); }
   .tr-varietal-winery { flex: 1; font-size: .9rem; font-weight: 600; color: var(--gray-5, #4a4038); }
   .tr-varietal-stars { white-space: nowrap; }
+  .tr-varietal-count { white-space: nowrap; font-size: .74rem; color: var(--gray-4); font-family: sans-serif; }
+  .tr-back-bar { display: inline-flex; align-items: center; gap: 6px; margin-bottom: 16px; padding: 7px 14px; background: #fff; border: 1px solid var(--gray-3); border-radius: 20px; font-size: .82rem; color: var(--gray-4); cursor: pointer; font-family: sans-serif; transition: all .14s; }
+  .tr-back-bar:hover { border-color: var(--gold); color: var(--gold); }
+  .tr-back-arrow { font-size: 1rem; }
   .tr-star { font-size: .95rem; color: var(--gray-3); }
   .tr-star.lit { color: var(--gold); }
 
@@ -779,6 +783,7 @@ let wineries = loadData();
   if (changed) saveData();
 })();
 let currentFilter         = 'all';
+let topVarietalDrill      = null;   // when set, Top Rated shows all rated places for this varietal
 let collapsedDistricts    = loadUiState();
 let editingId        = null;
 let planList        = [];
@@ -897,6 +902,30 @@ function renderTopRated(query) {
 
   const byRatingThenName = (a, b) => (b.rating - a.rating) || sortKey(a.name).localeCompare(sortKey(b.name));
 
+  // ── Drill-down: all rated places that poured a specific varietal ──────────────
+  if (topVarietalDrill) {
+    const v = topVarietalDrill;
+    const matches = rated
+      .filter(w => (w.varietals || []).includes(v))
+      .sort(byRatingThenName);
+    if (!matches.length) { topVarietalDrill = null; }   // fall through to full view
+    else {
+      main.innerHTML = `
+        <div class="tr-back-bar" onclick="clearVarietalDrill()">
+          <span class="tr-back-arrow">←</span> Back to Top Rated
+        </div>
+        <div class="district-section" data-district="southside">
+          <div class="district-header-band" style="cursor:default;">
+            <span style="font-size:1rem;">🍇</span>
+            <h2>Top Rated · ${escHtml(v)}</h2>
+            <span class="district-count">${matches.length} place${matches.length===1?'':'s'}</span>
+          </div>
+          <div class="winery-grid">${matches.map(w => cardHTML(w, true, false)).join('')}</div>
+        </div>`;
+      return;
+    }
+  }
+
   // Overall ranking (highest rated first).
   const overall = [...rated].sort(byRatingThenName);
   let html = `
@@ -909,10 +938,12 @@ function renderTopRated(query) {
       <div class="winery-grid">${overall.map(w => cardHTML(w, true, false)).join('')}</div>
     </div>`;
 
-  // Best winery per varietal (only varietals attached to rated wineries).
+  // Best winery per varietal, plus how many rated places poured each varietal.
   const varietalBest = {};
+  const varietalCount = {};
   rated.forEach(w => {
     (w.varietals || []).forEach(v => {
+      varietalCount[v] = (varietalCount[v] || 0) + 1;
       if (!varietalBest[v] || w.rating > varietalBest[v].rating) varietalBest[v] = w;
     });
   });
@@ -922,12 +953,14 @@ function renderTopRated(query) {
   if (varietals.length) {
     const rows = varietals.map(v => {
       const w = varietalBest[v];
+      const n = varietalCount[v];
       const stars = [1,2,3,4,5].map(i => `<span class="tr-star ${i<=w.rating?'lit':''}">★</span>`).join('');
       return `
-        <div class="tr-varietal-row" onclick="openModal('${w.id}')">
+        <div class="tr-varietal-row" onclick="showVarietalDrill('${v.replace(/\\/g,'\\\\').replace(/'/g,"\\'")}')">
           <span class="varietal-chip type-${varietalType(v)}">${escHtml(v)}</span>
           <span class="tr-varietal-winery">${escHtml(w.name)}</span>
           <span class="tr-varietal-stars">${stars}</span>
+          <span class="tr-varietal-count">${n} place${n===1?'':'s'} ›</span>
         </div>`;
     }).join('');
     html += `
@@ -942,6 +975,16 @@ function renderTopRated(query) {
   }
 
   main.innerHTML = html;
+}
+
+function showVarietalDrill(v) {
+  topVarietalDrill = v;
+  render();
+  window.scrollTo(0, 0);
+}
+function clearVarietalDrill() {
+  topVarietalDrill = null;
+  render();
 }
 
 // ── CARD HTML ─────────────────────────────────────────────────────────────────
@@ -993,6 +1036,7 @@ function renderStats() {
 
 function setFilter(f) {
   currentFilter = f;
+  topVarietalDrill = null;
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.filter === f));
   render();
 }
